@@ -5,23 +5,18 @@
 #include "Span.hpp"
 #include "StrView.hpp"
 #include <ostream>
-#include <string>
 #include <vector>
 
 #define DEFAULT_LOCATION -1
+#define NO_INDEX -2
 
 struct Location {
 private:
-	static std::string _defaultsBuff;
-
 public:
 	// Construnctor
 	Location(std::vector<StrView> &vecBuf);
 	Location();
-	// Assignement Operator
-	Location &operator=(const Location &other);
 
-	enum _e_allowed_methods { DEFAULT, GET, POST, DELETE };
 	static const char *_methodStrs[4];
 	// Substructs
 	Overrides _overrides;
@@ -37,6 +32,7 @@ public:
 	bool _uploadEnable;
 	uchar _allowedMethods;
 	// Getters Location Vars
+	bool usingDefaultMethods() const;
 	uchar isAllowedMethod(uchar methodToCheck) const;
 	const char *findCgiPath(StrView &extention) const;
 	const char *findCgiPath(const char *extention) const;
@@ -50,8 +46,10 @@ public:
 	const Span<StrView> &getCgiExtensions() const;
 	const Span<StrView> &getCgiPath() const;
 	const Overrides &getOverrides() const;
+	// Mathods
 	const char *safeStr(const char *str) const;
 	void printMethods(std::ostream &stream) const;
+	void printLocation(std::ostream &stream) const;
 	void printLocation(ssize_t index, std::ostream &stream) const;
 	void printStrvSpan(const char *msg, const Span<StrView> &span,
 					   std::ostream &stream) const;

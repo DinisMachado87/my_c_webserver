@@ -1,4 +1,5 @@
 #include "Location.hpp"
+#include "Http.hpp"
 #include "Overrides.hpp"
 #include "Span.hpp"
 #include "StrView.hpp"
@@ -24,25 +25,7 @@ Location::Location(std::vector<StrView> &vecBuf) :
 	_cgiPath(vecBuf),
 	_returnCode(0),
 	_uploadEnable(false),
-	_allowedMethods(DEFAULT) {}
-
-Location &Location::operator=(const Location &other) {
-	if (this == &other) {
-		return *this;
-	}
-	_overrides = other._overrides;
-	_cgiExtensions = other._cgiExtensions;
-	_cgiPath = other._cgiPath;
-	_path = other._path;
-	_returnPath = other._returnPath;
-	_rewrite_old = other._rewrite_old;
-	_rewrite_new = other._rewrite_new;
-	_uploadPath = other._uploadPath;
-	_returnCode = other._returnCode;
-	_uploadEnable = other._uploadEnable;
-	_allowedMethods = other._allowedMethods;
-	return *this;
-}
+	_allowedMethods(Http::DEFAULT) {}
 
 const Overrides &Location::getOverrides() const { return _overrides; }
 const char *Location::getPath() const { return _path.getStart(); }
@@ -57,6 +40,10 @@ const char *Location::getRewriteOldPath() const {
 
 const char *Location::getRewriteNewPath() const {
 	return _rewrite_new.getStart();
+}
+
+bool Location::usingDefaultMethods() const {
+	return (_allowedMethods == Http::DEFAULT ? true : false);
 }
 
 uchar Location::isAllowedMethod(uchar methodToCheck) const {
@@ -100,7 +87,7 @@ void Location::printMethods(ostream &stream) const {
 	bool none = true;
 	stream << "\tAllowed Methods (bitset: " << bitset<8>(_allowedMethods)
 		   << "): ";
-	for (size_t method = GET; method <= DELETE; method++)
+	for (size_t method = Http::GET; method <= Http::DELETE; method++)
 		if ((1 << method) & _allowedMethods) {
 			stream << _methodStrs[method] << " ,";
 			none = false;
@@ -110,10 +97,14 @@ void Location::printMethods(ostream &stream) const {
 	stream << '\n';
 }
 
+void Location::printLocation(ostream &stream) const {
+	printLocation(NO_INDEX, stream);
+}
+
 void Location::printLocation(ssize_t index, ostream &stream) const {
 	if (DEFAULT_LOCATION == index)
 		stream << "Deafault Location:\n";
-	else
+	else if (NO_INDEX != index)
 		stream << "  [" << index << "] Path: " << safeStr(getPath()) << '\n';
 
 	stream << "\tReturn Code: " << getReturncode() << '\n';

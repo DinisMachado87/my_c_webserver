@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Location.hpp"
+#include "Logger.hpp"
 #include "Overrides.hpp"
 #include "webServ.hpp"
 #include <arpa/inet.h>
@@ -60,9 +61,13 @@ const Location &Server::findLocation(const StrView &path) const {
 	vector<Location>::const_iterator cur = _locations.begin();
 	vector<Location>::const_iterator end = _locations.end();
 	for (; cur != end; ++cur)
-		if (path.ncompare(cur->getPath(), pathLen))
+		if (path.ncompare(cur->getPath(), pathLen)) {
+			LOG_OBJ_FUNC("Found Location: ", &(*cur), &Location::printLocation);
 			return (*cur);
+		}
 
+	LOG_OBJ_FUNC("location not found. Returning default Location: ",
+				 &_defaultLocation, &Location::printLocation);
 	return _defaultLocation;
 };
 

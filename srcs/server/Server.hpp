@@ -1,7 +1,5 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
-#include "ASocket.hpp"
 #include "Location.hpp"
 #include "Overrides.hpp"
 #include "StrView.hpp"
@@ -65,5 +63,3 @@ public:
 };
 
 std::ostream &operator<<(std::ostream &stream, const Server &server);
-
-#endif
