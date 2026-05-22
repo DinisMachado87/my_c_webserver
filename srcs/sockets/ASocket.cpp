@@ -4,12 +4,10 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <sys/epoll.h>
 
-using std::cout;
 using std::runtime_error;
 using std::string;
 
@@ -19,7 +17,7 @@ ASocket::ASocket(const int fd, const Server &server,
 	_fd(fd),
 	_server(server),
 	_serverAddr(serverAddr),
-	_parser(server),
+	_parser(server, fd),
 	_events(0) {}
 
 ASocket::~ASocket() {

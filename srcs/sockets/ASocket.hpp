@@ -1,7 +1,6 @@
-#ifndef ASOCKET_HPP
-#define ASOCKET_HPP
+#pragma once
 
-#include "../parser/HttpParser.hpp"
+#include "HttpParser.hpp"
 #include <netinet/in.h>
 #include <stdexcept>
 #include <stdint.h>
@@ -47,5 +46,3 @@ public:
 	// Static class methods
 	static int setNonBlocking(int fd);
 };
-
-#endif

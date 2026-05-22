@@ -1,5 +1,5 @@
 #include "ConfParser.hpp"
-#include "Location.hpp"
+#include "Http.hpp"
 #include "Logger.hpp"
 #include "Server.hpp"
 #include "StrView.hpp"
@@ -53,12 +53,12 @@ std::runtime_error ConfParser::parsingErr(const char *expected) const {
 
 // Private Methods
 void ConfParser::parseMethod() {
-	uchar method = Location::DEFAULT;
+	uchar method = Http::DEFAULT;
 	while (1) {
 		_token.loadNext();
 		switch (_token.getType()) {
 		case Token::SEMICOLON:
-			if (_newLocation._allowedMethods == Location::DEFAULT)
+			if (_newLocation._allowedMethods == Http::DEFAULT)
 				throw parsingErr("Method definition");
 			return;
 

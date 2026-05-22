@@ -2,7 +2,6 @@
 #define LOGGER_HPP
 
 #include "Clock.hpp"
-#include "Server.hpp"
 #include "webServ.hpp"
 #include <climits>
 #include <cstddef>
@@ -11,6 +10,8 @@
 #include <netinet/in.h>
 #include <sstream>
 #include <stdexcept>
+
+class Server;
 
 class Logger {
 	// STATIC SINGLETON
@@ -49,7 +50,7 @@ public:
 
 	template <typename T>
 	void logObj(const char *msg, const T *obj,
-				void (T::*method)(std::stringstream &) const) {
+				void (T::*method)(std::ostream &) const) {
 		if (CONTENT > _level)
 			return;
 		std::stringstream stream;
@@ -58,11 +59,11 @@ public:
 		print(CONTENT, stream);
 	}
 
-	template <typename T> void logObj(const char *msg, const T *obj) {
+	template <typename T> void logObj(const char *msg, const T &obj) {
 		if (CONTENT > _level)
 			return;
 		std::stringstream stream;
-		stream << msg << '\n' << *obj;
+		stream << msg << '\n' << obj;
 		print(CONTENT, stream);
 	}
 
@@ -146,6 +147,7 @@ private:
 #define LOG_TITLE(msg) Logger::logger()->logTitle(msg)
 #define LOG_SERVER(msg, server) Logger::logger()->logServer(msg, server)
 #define LOG_OBJ(msg, obj) Logger::logger()->logObj(msg, obj)
+#define LOG_OBJ_FUNC(msg, obj, func) Logger::logger()->logObj(msg, obj, func)
 #define TRACED(msg)                                                            \
 	Logger::logger()->traced(msg, __FILE__, __LINE__, __FUNCTION__)
 

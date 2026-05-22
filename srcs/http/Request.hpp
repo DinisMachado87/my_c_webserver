@@ -1,38 +1,33 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include "RequestBuffer.hpp"
+#include "RequestLine.hpp"
 #include "StrView.hpp"
+#include "StrViewMap.hpp"
 #include "webServ.hpp"
-#include <map>
 #include <string>
 #include <sys/types.h>
 
 class Request {
 private:
-	std::string _headerBuff;
+	// explicit disables
+	Request(const Request &other);
 
-	StrView _path;
-	StrView _query;
-	StrView _fragment;
+protected:
+	RequestBuffer _buff;
 
-	StrView _cgiExtension;
-
-	uchar _method;
-	bool _http1_1;
-	bool _isDir;
-	bool _isCgi;
-
-	std::map<StrView, StrView> _headers;
-
+	RequestLine _requestLine;
+	StrViewMap _headers;
 	StrView _body;
 
 	friend class HttpParser;
 	friend class Expect;
+	// private constructor
+	Request(int fd);
 
 public:
 	// Constructors and destructors
-	Request();
-	Request(const Request &other);
 	~Request();
 
 	// Operators overload

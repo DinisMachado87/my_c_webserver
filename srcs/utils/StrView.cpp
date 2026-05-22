@@ -62,6 +62,17 @@ StrView &StrView::operator=(const StrView &other) {
 	return *this;
 }
 
+StrView &StrView::operator=(StrView &other) {
+	if (this == &other)
+		return *this;
+
+	this->_rawBuffer = other._rawBuffer;
+	this->_offset = other._offset;
+	this->_len = other._len;
+
+	return *this;
+}
+
 bool StrView::operator==(const StrView &other) const {
 	if (_len != other._len)
 		return false;
@@ -110,8 +121,8 @@ void StrView::printStrV() const { write(1, getStart(), _len); }
 void StrView::streamStrV(std::stringstream &stream) const {
 	stream << getStr() << "\n";
 }
-void StrView::streamBuffer(std::stringstream &stream) const {
-	stream << _rawBuffer << "\n";
+void StrView::printBuffer() const {
+	write(1, _rawBuffer->c_str(), _rawBuffer->length());
 }
 bool StrView::compare(StrView &strV) const { return compare(strV.getStart()); }
 void StrView::nullTerminate() { _rawBuffer[_offset + _len - 1] = '\0'; }
@@ -238,10 +249,10 @@ StrView StrView::lastSplitBefore(const char c) const {
 	size_t curOffset = 0;
 	while (1) {
 		size_t nextDivider = find(c, curOffset);
-		if (nextDivider > UINT_MAX)
-			throw runtime_error(TRACED("uint overflow"));
 		if (nextDivider == string::npos)
 			return StrView(_rawBuffer, curOffset, nextDivider);
+		if (nextDivider > UINT_MAX)
+			throw runtime_error(TRACED("uint overflow"));
 		curOffset = static_cast<uint>(nextDivider);
 	}
 }
@@ -261,38 +272,5 @@ vector<StrView> StrView::splitBefore(const char c) const {
 			break;
 		curOffset = static_cast<uint>(nextDivider);
 	}
-	return splitVec;
-}
-
-vector<StrView> StrView::splitPath() {
-	vector<StrView> splitVec;
-
-	uint curOffset = 0;
-	StrView cur = *this;
-	size_t nextDivider = segmentUntil('/', curOffset, cur);
-
-	while (nextDivider != string::npos) {
-		if (nextDivider > UINT_MAX)
-			throw runtime_error(TRACED("uint overflow"));
-
-		const bool onlySlash
-			= ((cur.getLen() == 1 && cur.ncompare("/", 1))
-			   || (cur.getLen() == 2 && cur.ncompare("/.", 2)));
-
-		if (onlySlash) {
-			const bool isLastSegment = _len - 1 == nextDivider;
-			if (isLastSegment) {
-				cur.setLen(1); // if '/.' truncates to '/'
-				splitVec.push_back(cur);
-				return splitVec;
-			}
-		} else
-			splitVec.push_back(cur);
-		curOffset = static_cast<uint>(nextDivider);
-		nextDivider = segmentUntil('/', curOffset, cur);
-	}
-
-	if (cur.getLen() > 0)
-		splitVec.push_back(cur);
 	return splitVec;
 }

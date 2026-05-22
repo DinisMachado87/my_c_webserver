@@ -1,7 +1,12 @@
 #include "HttpParser.hpp"
+#include "HttpError.hpp"
+#include "HttpStates.hpp"
+#include "HttpToken.hpp"
 #include "Location.hpp"
 #include "Logger.hpp"
 #include "Request.hpp"
+#include "RequestLine.hpp"
+#include "Server.hpp"
 #include "StrView.hpp"
 #include "Token.hpp"
 #include "webServ.hpp"
@@ -10,11 +15,10 @@
 #include <stdexcept>
 #include <string>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <utility>
-#include <vector>
 
 using std::make_pair;
-using std::runtime_error;
 using std::string;
 
 const char *g_methods[] = {"DEFAULT", "GET", "POST", "DELETE"};
@@ -24,96 +28,55 @@ const char *const HttpParser::bodyLabels[STATE_SIZE]
 	   "SET_CHUNK_SIZE",	  "SET_BODY_SIZE", "CHUNKED_BODY", "NO_BODY",
 	   "MAKE_ERROR_RESPONSE", "RETURN"};
 
-const uchar *HttpParser::delimiters() {
-	static uchar isDelimiter[256] = {0};
-	isDelimiter[' '] = Token::SPACE;
-	isDelimiter['\t'] = Token::SPACE;
-	isDelimiter['\r'] = Token::NEWLINE;
-	isDelimiter['\n'] = Token::NEWLINE;
-	isDelimiter['\0'] = Token::ENDOFILE;
-	return isDelimiter;
-}
-
 // Public constructors and destructors
-HttpParser::HttpParser(const Server &server) :
+HttpParser::HttpParser(const Server &server, int fd) :
 	_server(server),
-	_request(new Request),
+	_fd(fd),
+	_request(new Request(fd)),
+	_requestLineParser(_token, _expect, _request->_requestLine, _state),
 	_charRead(0),
 	_headerLen(0),
 	_state(REQUEST_LINE),
 	_nextBodySection(0),
 	_needsMoreInput(false),
 	_toGetChunk(false),
-	_token(delimiters(), _request->_headerBuff),
+	_token(_request->_buff.getBuffRef()),
 	_expect(_token),
 	_status(200) {}
 
-HttpParser::~HttpParser() {}
+HttpParser::~HttpParser() { delete _request; }
 
 // Public Methods
-uchar HttpParser::handleNewline() {
-	_token.loadNextOfType(Token::NEWLINE, "NEWLINE");
-
-	if (_token.compare("\r\n\r\n")) {
-		_state = VALIDATE;
-		return VALIDATE;
-	} else if (_token.compare("\r\n"))
-		return NEEDS_MORE_INPUT;
-
-	throw _expect.parsingErr("NEWLINE");
-}
-
-void HttpParser::receive(int fd) {
-	size_t leftInBuff = MAX_HEADER_SIZE - _headerLen;
-	if (leftInBuff <= 0)
-		throw runtime_error("Max header size exceeded");
-
-	size_t maxToRead = BUFFER_SIZE < leftInBuff ? BUFFER_SIZE : leftInBuff;
-
-	_charRead = recv(fd, &_buff, maxToRead, 0);
-	if (_charRead == ERR)
-		throw runtime_error("Error reading http header: invalid recv()");
-
-	_headerLen += _charRead;
-	_request->_headerBuff.append(_buff, _charRead);
-}
-
-void HttpParser::parseRequestLine() {
-	try {
-		_token.loadNextOfType(Token::WORD, "Http Method");
-		const uchar method = _expect.method();
-		if (Location::DEFAULT == method)
-			return setError(400, "Http method non existent. ");
-		_request->_method = method;
-
-		_expect.consolidatedPath(&_request->_path);
-
-		_token.loadNext();
-		if (!_token.compare("HTTP/1.1")) {
-			if (_token.compare("HTTP/1.0"))
-				_request->_http1_1 = false;
-			else
-				return setError(505, "Http vertion not suported");
-		}
-
-		if (RETURN == handleNewline())
-			return;
-
-		_state = HEADERS;
-	} catch (const runtime_error &err) {
-		LOG_ERROR(err);
-		setError(400, "Invalid http request line");
-	}
-}
-
 void HttpParser::validateRequestLine() {
 	const Location &location = _server.findLocation(_request->getPath());
 
-	if (!location.isAllowedMethod(_request->getMethod()))
-		setError(405, "Method not allowed");
-}
+	if (location.usingDefaultMethods())
+		LOG(Logger::LOG, "Using default Methods");
+	else if (!location.isAllowedMethod(_request->getMethod()))
+		throw HttpError::HTTP_METHOD_NOT_ALLOWED;
+	LOG_LABELED(Logger::LOG, "Allowed ", g_methods[_request->getMethod()]);
 
-void HttpParser::validateHeader() {}
+	struct stat file_status;
+	if (OK
+		!= stat(_request->_requestLine.getPath().getStr().c_str(),
+				&file_status))
+		throw HttpError::HTTP_NOT_FOUND;
+
+	// bool isDir = S_ISDIR(file_status.st_mode);
+	//
+	// int permissionsToCheck = 0;
+	// switch (_requestLine->getMethod()) {
+	// case Location::GET:
+	// 	permissionsToCheck = isDir ? (R_OK | X_OK) : R_OK;
+	// 	break;
+	// case Location::POST:
+	// 	permissionsToCheck = isDir ? (W_OK | X_OK) : W_OK;
+	// 	break;
+	// case Location::DELETE:
+	// 	// target = getParentDir(path);
+	// 	permissionsToCheck = W_OK | X_OK;
+	// }
+}
 
 void HttpParser::setError(const uint errorCode, const char *detailMsg) {
 	_status = errorCode;
@@ -132,25 +95,20 @@ void HttpParser::validateKey(StrView Key) {
 }
 
 void HttpParser::parseHeaders() {
-	StrView key(_request->_headerBuff);
-	StrView value(_request->_headerBuff);
-
 	while (1) {
 		_token.loadNextOfType(Token::WORD, "Http header key or eof");
-		key = _token.getStrV();
+		StrView key = _token.getStrV();
 
 		if (*key.getEnd() != ':')
-			throw _expect.parsingErr(":");
+			throw _token.parsingErr(":");
 		key.trimEnd(1);
 
 		_token.loadNextStr("http header Value");
-		value = _token.getStrV();
+		StrView value = _token.getStrV();
 
 		_request->_headers.insert(make_pair(key, value));
-		if (RETURN == handleNewline()) {
-			_state = SET_BODY_SIZE;
+		if (HttpToken::DOUBLE == _token.handleNewline())
 			return;
-		}
 	}
 }
 
@@ -200,15 +158,17 @@ void HttpParser::getChunk() {
 	}
 }
 
-Request *HttpParser::parse(const char *inBuff, size_t size) {
+Request *HttpParser::recvAndParse() {
 	_needsMoreInput = false;
-	_headerLen += size;
-	_request->_headerBuff.append(inBuff, size);
+
+	if (!_request->_buff.recvAppend(_fd))
+		return NULL;
 
 	while (!_needsMoreInput) {
 		switch (_state) {
 		case (REQUEST_LINE):
-			parseRequestLine();
+			_requestLineParser.parse();
+			LOG_OBJ("Parsed request line", _request->_requestLine);
 			continue;
 		case (HEADERS):
 			parseHeaders();
@@ -221,12 +181,12 @@ Request *HttpParser::parse(const char *inBuff, size_t size) {
 						   _state);
 			continue;
 		case (BODY):
-			if (_token.getSizeLeft() < _nextBodySection) {
+			if (_token.getSizeLeft() < _nextBodySection)
 				_needsMoreInput = true;
-				continue;
+			else {
+				_request->_body = _token.getRemaining();
+				_state = RETURN;
 			}
-			_request->_body = _token.getRemaining();
-			_state = RETURN;
 			continue;
 		case (SET_CHUNK_SIZE):
 			_needsMoreInput = _token.loadNextHex(&_nextBodySection);
@@ -234,9 +194,11 @@ Request *HttpParser::parse(const char *inBuff, size_t size) {
 		case (CHUNKED_BODY):
 			getChunk();
 			continue;
+		case (MAKE_ERROR_RESPONSE):
+			return NULL;
 		case (RETURN):
 			Request *ret = _request;
-			_request = new Request;
+			_request = new Request(_fd);
 			return ret;
 		}
 	}

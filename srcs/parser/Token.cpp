@@ -17,8 +17,6 @@
 #include <unistd.h>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using std::map;
 using std::string;
 using std::stringstream;
@@ -93,6 +91,7 @@ uchar Token::loadNext() { return loadNextCore(false); }
 uchar Token::loadNextStr() { return loadNextCore(true); }
 
 uchar Token::loadNextCore(const bool keepSpaces) {
+
 	_strV.updateOffset(_strV.getLen() + _pendingQuote);
 	_pendingQuote = false;
 	const char *str = _strV.getStart();
@@ -266,6 +265,8 @@ void Token::trackInUseToken(StrView *strV) {
 	_tokensInUse.push_back(strV);
 	_strBuffSize += strV->getLen() + 1;
 }
+
+void Token::printBuffer() { _strV.printBuffer(); }
 
 void Token::printBuffers(stringstream &stream) {
 	stream << "_tokensInUse: ";

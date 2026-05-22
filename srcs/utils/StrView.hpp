@@ -30,6 +30,7 @@ public:
 	~StrView();
 	// Operators overload
 	StrView &operator=(const StrView &other);
+	StrView &operator=(StrView &other);
 	bool operator==(const StrView &other) const;
 	bool operator!=(const StrView &other) const;
 	bool operator!=(const char *str) const;
@@ -49,7 +50,6 @@ public:
 	size_t segmentUntil(char separator, uint startOffset,
 						StrView &segment) const;
 	std::vector<StrView> splitBefore(const char c) const;
-	std::vector<StrView> splitPath();
 	StrView lastSplitBefore(const char c) const;
 	void info(std::ostream &, const char item = 0,
 			  const char *color = "") const;
@@ -60,8 +60,8 @@ public:
 	size_t findPosInBuffer(const char c, const size_t addedOffset = 0) const;
 	void intoStream(std::ostream &stream) const;
 	void streamStrV(std::stringstream &stream) const;
-	void streamBuffer(std::stringstream &stream) const;
 	void streamStrView(std::stringstream &stream);
+	void printBuffer() const;
 	bool ncompare(const char *str, size_t len) const;
 	size_t getBufferSize() const;
 	void nullTerminate();

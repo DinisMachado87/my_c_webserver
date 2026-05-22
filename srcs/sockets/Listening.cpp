@@ -32,7 +32,9 @@ Listening::Listening(const int fd, const Server &server,
 					 struct sockaddr_in serverAddr) :
 	ASocket(fd, server, serverAddr) {}
 
-Listening::~Listening() {}
+Listening::~Listening() {
+	LOGSOCK(Logger::LOG, "Destroying Listening Socket ", _fd);
+}
 
 // Public Methods
 Listening *Listening::create(const Server &server, const Listen &listenSock) {

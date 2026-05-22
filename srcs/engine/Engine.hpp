@@ -2,6 +2,7 @@
 #define ENGINE_HPP
 
 #include "ASocket.hpp"
+#include "Server.hpp"
 #include "webServ.hpp"
 #include <map>
 #include <netinet/in.h>

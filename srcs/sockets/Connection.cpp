@@ -4,7 +4,6 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Server.hpp"
-#include "exception/Exception.hpp"
 #include "webServ.hpp"
 #include <cerrno>
 #include <cstddef>
@@ -25,7 +24,7 @@ using std::string;
 Connection::Connection(const int fd, const Server &server,
 					   struct sockaddr_in serverAddr) :
 	ASocket(fd, server, serverAddr),
-	_http(server),
+	_http(server, fd),
 	_responseReceivingBody(NULL),
 	_cur(0),
 	_back(0),
@@ -35,29 +34,11 @@ Connection::Connection(const int fd, const Server &server,
 }
 
 Connection::~Connection() {
-	LOGSOCK(Logger::LOG, "Destroying ", _fd);
+	LOGSOCK(Logger::LOG, "Destroying Connection Socket", _fd);
 	while (_responses[_cur]) {
 		_responses[_cur] = NULL;
 		_cur = (_cur + 1) % RESPONSES_CUE_SIZE;
 	}
-}
-
-size_t Connection::recvToBuffer(char *buffer) {
-	ssize_t bytesRead = recv(_fd, buffer, RECV_SIZE, 0);
-
-	if (bytesRead <= ERR) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return 0;
-		else
-			throw(runtime_error(TRACED("recv() failure reading from client")
-								+ string(strerror(errno))));
-	}
-	if (bytesRead == 0)
-		throw ClientClosed();
-
-	buffer[bytesRead] = '\0';
-	LOG_LABELED(Logger::CONTENT, "RECV buffer: ", buffer);
-	return bytesRead;
 }
 
 // Public Methods
@@ -66,15 +47,10 @@ ASocket *Connection::handleIn() {
 
 	Request *request = NULL;
 
-	char buffer[RECV_SIZE + 1];
-	size_t bytesRead = recvToBuffer(buffer);
-	if (!bytesRead)
-		return NULL;
-
 	try {
 		switch (_handleInState) {
 		case REQUEST:
-			request = _http.parse(buffer, bytesRead);
+			request = _http.recvAndParse();
 			if (!request)
 				return NULL;
 

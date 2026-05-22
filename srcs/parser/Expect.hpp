@@ -1,7 +1,6 @@
 #ifndef EXPECT_HPP
 #define EXPECT_HPP
 
-#include "Request.hpp"
 #include "Span.hpp"
 #include "Token.hpp"
 #include <cstddef>
@@ -30,13 +29,10 @@ public:
 	// Methods
 	void consolidatePath(std::vector<StrView> &segments, size_t &writeIdx,
 						 bool &hasChanges);
-	void isCgiOrDir(const std::vector<StrView> &pathSegments, Request &request);
 	void printPathSegs(std::vector<StrView> &segments, uint i, uint writeIdx,
 					   uint deletedSegs);
 	uint advanceToNextSegment(StrView &view, uint currentLen);
 	uint findNextDivider(StrView &view);
-	void consolidatedPath(StrView *destPath, Request *request = NULL);
-	std::runtime_error parsingErr(const char *expected) const;
 	uchar method();
 	uint16_t port(const std::string &portStr);
 	in_addr_t ip(std::string &ipStr);

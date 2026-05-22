@@ -4,6 +4,7 @@
 #include "Connection.hpp"
 #include "Listening.hpp"
 #include "Logger.hpp"
+#include "Server.hpp"
 #include "exception/Exception.hpp"
 #include "webServ.hpp"
 #include <bits/types/error_t.h>

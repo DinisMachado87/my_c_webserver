@@ -54,6 +54,7 @@ public:
 	static const uchar *configDelimiters();
 
 	// Methods
+	void printBuffer();
 	void consolidateStrVMap(std::map<uint, StrView> &strVMap,
 							std::string &newStrBuf);
 	void printBuffers(std::stringstream &stream);

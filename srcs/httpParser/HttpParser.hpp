@@ -1,10 +1,11 @@
-#ifndef HTTPPARSER_HPP
-#define HTTPPARSER_HPP
+#pragma once
 
 #include "Expect.hpp"
-#include "Request.hpp"
+#include "HttpStates.hpp"
+#include "HttpToken.hpp"
+#include "RequestLineParser.hpp"
 #include "Response.hpp"
-#include "Token.hpp"
+#include "Server.hpp"
 #include <linux/stat.h>
 #include <sys/types.h>
 #include <vector>
@@ -12,46 +13,34 @@
 #define BUFFER_SIZE 1024
 #define NEEDS_MORE_INPUT true
 
-class Server;
-
 class HttpParser {
 private:
-	enum state {
-		REQUEST_LINE,
-		HEADERS,
-		VALIDATE,
-		BODY,
-		SET_CHUNK_SIZE,
-		SET_BODY_SIZE,
-		CHUNKED_BODY,
-		NO_BODY,
-		MAKE_ERROR_RESPONSE,
-		RETURN,
-		STATE_SIZE
-	};
-
-	static const char *const bodyLabels[STATE_SIZE];
-
 	const Server &_server;
+	int _fd;
 	Request *_request;
 	Response *_response;
 
+	RequestLineParser _requestLineParser;
+
 	ssize_t _charRead;
 	ssize_t _headerLen;
-	uint _state;
+	uchar _state;
 	size_t _nextBodySection;
 	bool _needsMoreInput;
 
-	bool _toGetChunk;
 	std::vector<StrView> _chunks;
+	bool _toGetChunk;
 
-	Token _token;
+	HttpToken _token;
 	Expect _expect;
 	char _buff[BUFFER_SIZE];
 
 	uint _status;
 
+	static const char *const bodyLabels[STATE_SIZE];
+
 	// Methods
+	uchar handleNewline(uint singleNextState, uint doubleNextState);
 	void validateRequestLine();
 	void setError(const uint errorCode, const char *detailMsg);
 	void validateRequest();
@@ -59,7 +48,6 @@ private:
 	void validateHeader();
 	void getChunk();
 	void setBodySize();
-	uchar handleNewline();
 	void receive(int fd);
 	void parseHeaders();
 	void parseRequestLine();
@@ -75,7 +63,7 @@ private:
 
 public:
 	// Constructors and destructors
-	HttpParser(const Server &server);
+	HttpParser(const Server &server, int fd);
 	~HttpParser();
 
 	// Operators overload
@@ -83,7 +71,5 @@ public:
 	// Getters and setters
 
 	// Methods
-	Request *parse(const char *inBuff, size_t size);
+	Request *recvAndParse();
 };
-
-#endif
