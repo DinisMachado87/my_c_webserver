@@ -28,7 +28,7 @@ SRCS_MAIN		:= main.cpp
 SRCS_ENGINE		:= engine Engine.cpp Signals.cpp
 SRCS_SERVER		:= server Server.cpp Overrides.cpp Location.cpp
 SRCS_HTTP		:= http Request.cpp Response.cpp RequestLine.cpp RequestBuffer.cpp
-SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp HttpParser.cpp
+SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp HttpParser.cpp HttpHeadersParser.cpp
 SRCS_PATH		:= path PathConsolidator.cpp RequestPathConsolidator.cpp Path.cpp RequestPath.cpp 
 SRCS_SOCKET		:= sockets ASocket.cpp Listening.cpp Connection.cpp CGISocketPair.cpp 
 SRCS_PARSER		:= parser Token.cpp Expect.cpp ConfParser.cpp
@@ -49,6 +49,7 @@ endef
 
 # Build SRCS_CORE and SRCS_TEST_CORE dynamically from groups
 SRCS_CORE		:= $(foreach group,$(SRC_GROUPS),$(call make_paths,$($(group))))
+
 
 
 # If CLASS_ARG is provided, only include matching test files
