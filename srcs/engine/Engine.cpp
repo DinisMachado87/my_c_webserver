@@ -28,9 +28,8 @@ using std::vector;
 
 // Public constructors and destructors
 Engine::Engine() :
-	_fdEpoll(-1) {
-	epoll_init();
-}
+	_fdEpoll(-1),
+	_programdefaults(_defaultsVecBuf) {}
 
 Engine::~Engine() {
 	map<int, ASocket *>::iterator socket = _sockets.begin();
@@ -51,6 +50,39 @@ runtime_error Engine::handleError(const string errMsg, const int err) {
 }
 
 // Public Methods
+void Engine::loadProgramDefaults() {
+	_defaultsBuffer.reserve(256);
+
+	// Root
+	uint rootOffset = _defaultsBuffer.size();
+	_defaultsBuffer.append(DEFAULT_ROOT);
+	_defaultsBuffer.push_back('\0');
+	_programdefaults._overrides._root
+		= StrView(_defaultsBuffer, rootOffset, sizeof(DEFAULT_ROOT) - 1);
+
+	// Index
+	uint indexOffset = _defaultsBuffer.size();
+	_defaultsBuffer.append(DEFAULT_INDEX);
+	_defaultsBuffer.push_back('\0');
+	_defaultsVecBuf.push_back(
+		StrView(_defaultsBuffer, indexOffset, sizeof(DEFAULT_INDEX) - 1));
+	_programdefaults._overrides._index = Span<StrView>(_defaultsVecBuf, 0, 1);
+
+	// Numeric / bool
+	_programdefaults._overrides._clientMaxBody = CLIENT_MAX_BODY;
+	_programdefaults._overrides._uploadMaxBody = UPLOAD_MAX_BODY;
+	_programdefaults._overrides._autoindex = false;
+
+	// Allowed methods from define
+	static const uchar defaultMethods[] = DEFAULT_METHODS;
+	for (int i = 0; i < DEFAULT_METHODS_LEN; i++)
+		_programdefaults._allowedMethods |= (1 << defaultMethods[i]);
+
+	// Other location fields
+	_programdefaults._uploadEnable = false;
+	_programdefaults._returnCode = 0;
+}
+
 void Engine::epoll_init() {
 	_fdEpoll = epoll_create(1);
 	if (_fdEpoll < 0)
@@ -100,7 +132,7 @@ void Engine::deleteSocket(ASocket *socket) {
 }
 
 void Engine::buildServers(string &config) {
-	ConfParser parser(config, _servers);
+	ConfParser parser(config, _servers, _programdefaults);
 	parser.createServers();
 }
 
@@ -154,7 +186,7 @@ void Engine::pollLoop() {
 	while (!g_shutdown) {
 		nFds = -1;
 		usleep(100000);
-		LOG(Logger::LOG, "New Loop");
+		LOG_TITLE("New Loop");
 		nFds = epoll_wait(_fdEpoll, events, MAX_EVENTS, TIMEOUT);
 		if (ERR == nFds) {
 			if (errno == EINTR)
@@ -163,6 +195,7 @@ void Engine::pollLoop() {
 		}
 
 		for (int i = 0; i < nFds && !g_shutdown; i++) {
+			LOG_TITLE("Next socket");
 			ASocket *socket = static_cast<ASocket *>(events[i].data.ptr);
 			uint32_t ev = events[i].events;
 			try {
@@ -193,6 +226,8 @@ void Engine::pollLoop() {
 
 void Engine::run(string &config) {
 	try {
+		loadProgramDefaults();
+		epoll_init();
 		buildServers(config);
 		createSockets();
 		pollLoop();

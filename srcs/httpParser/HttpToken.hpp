@@ -16,6 +16,9 @@ public:
 	// Operators overload
 	HttpToken &operator=(const HttpToken &other);
 	// Methods
+	// uchar loadHttpNewLine();
+	void loadNextHex(size_t *ret);
+	StrView getBody(size_t bodySize);
 	uchar handleNewline();
 	static const uchar *configDelimiters();
 };

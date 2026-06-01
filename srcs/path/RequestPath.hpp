@@ -12,16 +12,19 @@ protected:
 	RequestPath();
 	RequestPath(const StrView &pathStr);
 	RequestPath(const StrView &path, const StrView &query,
-				const StrView &fragment, const bool isDir, const bool isCgi,
-				const StrView &cgiExtension);
+				const StrView &fragment, const uchar type,
+				const StrView &dirPath, const StrView &sufix);
 
-	bool _isDir;
-	bool _isCgi;
-	StrView _cgiExtension;
+	uchar _type;
+	StrView _file;
+	StrView _dirPath;
+	StrView _sufix;
 
 public:
-	bool isDir() const;
-	bool isCgi() const;
+	enum pathType { NONE, DIR, FILE, CGI, EXECUTABLE, CGI_W_INTERPRETER, SIZE };
+	static const char *typeLabels[SIZE];
+
+	uchar getType() const;
 	StrView const &getCgiExtension() const;
 
 	void print(std::ostream &stream) const;

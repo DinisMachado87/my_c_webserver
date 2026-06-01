@@ -1,5 +1,4 @@
-#ifndef WEBSERV_HPP
-#define WEBSERV_HPP
+#pragma once
 
 #include <csignal>
 #define VERBOSE 1
@@ -11,7 +10,12 @@
 #define DONE true
 // FD
 #define EMPTY -1
+// http
+enum methods { DEFAULT, GET, POST, DELETE };
 // default server settings
+#define DEFAULT_METHODS {GET, POST, DELETE}
+#define DEFAULT_METHODS_LEN 3
+
 #define DEFAULT_ROOT "./defaultLocation/"
 #define DEFAULT_INDEX "index.html"
 #define MB 1048576 // megabyte
@@ -49,5 +53,3 @@ typedef unsigned char uchar;
 extern volatile sig_atomic_t g_shutdown;
 
 extern const char *g_methods[];
-
-#endif

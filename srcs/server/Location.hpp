@@ -11,7 +11,6 @@
 #define NO_INDEX -2
 
 struct Location {
-private:
 public:
 	// Construnctor
 	Location(std::vector<StrView> &vecBuf);
@@ -54,5 +53,10 @@ public:
 	void printStrvSpan(const char *msg, const Span<StrView> &span,
 					   std::ostream &stream) const;
 };
+
+inline std::ostream &operator<<(std::ostream &os, const Location &location) {
+	location.printLocation(os);
+	return os;
+}
 
 #endif

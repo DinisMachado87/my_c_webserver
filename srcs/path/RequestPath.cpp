@@ -6,32 +6,30 @@ using std::ostream;
 
 RequestPath::RequestPath() :
 	Path(),
-	_isDir(false),
-	_isCgi(false),
-	_cgiExtension() {}
+	_type(NONE) {}
 
 RequestPath::RequestPath(const StrView &pathStr) :
 	Path(pathStr),
-	_isDir(false),
-	_isCgi(false),
-	_cgiExtension() {}
+	_type(NONE) {}
 
 RequestPath::RequestPath(const StrView &path, const StrView &query,
-						 const StrView &fragment, const bool isDir,
-						 const bool isCgi, const StrView &cgiExtension) :
+						 const StrView &fragment, const uchar type,
+						 const StrView &dirPath, const StrView &sufix) :
 	Path(path, query, fragment),
-	_isDir(isDir),
-	_isCgi(isCgi),
-	_cgiExtension(cgiExtension) {}
+	_type(type),
+	_dirPath(dirPath),
+	_sufix(sufix) {}
 
-bool RequestPath::isDir() const { return _isDir; }
-bool RequestPath::isCgi() const { return _isCgi; }
-const StrView &RequestPath::getCgiExtension() const { return _cgiExtension; }
+const char *RequestPath::typeLabels[SIZE]
+	= {"NONE", "DIR", "FILE", "EXECUTABLE", "CGI", "CGI_W_INTERPRETER"};
+
+uchar RequestPath::getType() const { return _type; }
+const StrView &RequestPath::getCgiExtension() const { return _sufix; }
 
 void RequestPath::print(ostream &stream) const {
 	Path::print(stream);
-	stream << " isDir: " << _isDir << " isCgi: " << _isCgi
-		   << " cgiExt: " << _cgiExtension;
+	stream << "\ndirPath:'" << _dirPath << "' | type: " << typeLabels[_type]
+		   << " | file: '" << _file << "' | cgiExt: '" << _sufix << "'\n";
 }
 
 ostream &operator<<(ostream &os, const RequestPath &path) {

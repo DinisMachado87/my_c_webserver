@@ -22,7 +22,7 @@ StrView const &Path::getFragment() const { return _fragment; }
 
 // Debug
 void Path::print(ostream &stream) const {
-	stream << "Path: '" << _path << "' | query: '" << _query << "' | frag: '"
+	stream << "Path:\t'" << _path << "' | query: '" << _query << "' | frag: '"
 		   << _fragment << "'";
 }
 

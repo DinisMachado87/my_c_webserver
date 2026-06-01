@@ -1,6 +1,5 @@
 #include "Token.hpp"
 #include "Logger.hpp"
-#include "Server.hpp"
 #include "StrView.hpp"
 #include "webServ.hpp"
 #include <cctype>
@@ -30,6 +29,7 @@ Token::Token(const uchar *table, std::string &parsingString) :
 	_type(0),
 	_lineN(0),
 	_pendingQuote(false),
+	_needsMoreInput(false),
 	_strBuffSize(0),
 	_vecBuffConsolidationIndex(0) {}
 
@@ -100,10 +100,15 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 	while (1) {
 		_type = _isDelimiter[(uchar)(*str)];
 		switch (_type) {
+		case ENDOFILE:
+			_needsMoreInput = true;
+			return ENDOFILE;
 		case NEWLINE: // extract new line expresion
 			_strV.setStart(str);
 			while (NEWLINE == _isDelimiter[(uchar)(*str)])
 				str++;
+			if (ENDOFILE == _isDelimiter[(uchar)(*str)])
+				_needsMoreInput = true;
 			_strV.setLen(str - _strV.getStart());
 			return _type;
 		case SPACE: // Skip cursor
@@ -123,7 +128,13 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 			else
 				while (WORD == _isDelimiter[(uchar)(*str)])
 					str++;
-			_strV.setLen(str - _strV.getStart());
+
+			if (ENDOFILE == _isDelimiter[(uchar)(*str)]) {
+				_needsMoreInput = true;
+				_type = WORD;
+			} else
+				_strV.setLen(str - _strV.getStart());
+
 			return _type;
 
 		case QUOTE:
@@ -163,59 +174,6 @@ uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr) {
 		types++;
 	}
 	throw parsingErr(errStr);
-}
-
-bool Token::loadNextHex(size_t *ret) {
-	static const int hexLen = 16;
-	static const bool needsMoreInput = true;
-	_strV.updateOffset(_strV.getLen());
-	const char *start = _strV.getStart();
-
-	errno = 0;
-	char *end;
-	long num = strtol(start, &end, hexLen);
-
-	if (errno == ERANGE)
-		throw parsingErr("Number out of range");
-	if (num < 0)
-		throw parsingErr("Negative chunk len received");
-
-	// Check if there is space to be "\r\n" or "\0\r\n" terminated
-	size_t len = end - start;
-	size_t sizeLeft = getSizeLeft() - len;
-	if ((*end == '\0' && 3 > sizeLeft) || 2 > sizeLeft)
-		return needsMoreInput;
-
-	if (end == start)
-		throw parsingErr("Expected number");
-
-	_strV.setLen(len);
-
-	if (!loadHttpNewLine() || NEWLINE != getType())
-		throw parsingErr("Newline");
-
-	*ret = static_cast<size_t>(num);
-	return !needsMoreInput;
-}
-
-uchar Token::loadHttpNewLine() {
-	_strV.updateOffset(_strV.getLen());
-	_strV.setLen(0);
-
-	size_t sizeLeft = getSizeLeft();
-	if (sizeLeft < 2)
-		return OTHER;
-
-	if (_strV.compare("\r\n")) {
-		_strV.setLen(2);
-		return NEWLINE;
-	} else if (sizeLeft < 2)
-		return OTHER;
-	else if (_strV.compare("\0\r\n")) {
-		_strV.setLen(3);
-		return ENDOFILE;
-	}
-	throw parsingErr("End of line or request");
 }
 
 bool Token::compare(const char *str) const {
@@ -311,3 +269,6 @@ void Token::resetSpanConsolidationIndex() { _vecBuffConsolidationIndex = 0; }
 void Token::LoadParsingString(string &parsingString) {
 	_strV.setBuffer(parsingString);
 }
+
+bool Token::needsMoreInput() { return _needsMoreInput; }
+void Token::resetNeedsMoreInputFlag() { _needsMoreInput = false; }

@@ -35,7 +35,7 @@ uchar Expect::method() {
 	for (int i = 1; i < size; i++)
 		if (true == _token.compare(g_methods[i]))
 			return (i);
-	return Http::DEFAULT;
+	return DEFAULT;
 }
 
 bool Expect::onOff() {

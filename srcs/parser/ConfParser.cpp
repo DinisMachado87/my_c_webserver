@@ -1,5 +1,6 @@
 #include "ConfParser.hpp"
 #include "Http.hpp"
+#include "Location.hpp"
 #include "Logger.hpp"
 #include "Server.hpp"
 #include "StrView.hpp"
@@ -27,9 +28,11 @@ using std::vector;
 typedef pair<map<uint, StrView>::iterator, bool> errorVecPair;
 
 // Public constructors and destructors
-ConfParser::ConfParser(string &configStr, vector<Server *> &servers) :
+ConfParser::ConfParser(string &configStr, vector<Server *> &servers,
+					   const Location &programDefaults) :
+	_programDefaults(programDefaults),
 	_servers(servers),
-	_newServer(new Server()),
+	_newServer(new Server(_programDefaults)),
 	_newLocation(_newServer->_strvVecBuf),
 	_curStrConfig(configStr.c_str()),
 	_vecCursor(0),
@@ -53,12 +56,12 @@ std::runtime_error ConfParser::parsingErr(const char *expected) const {
 
 // Private Methods
 void ConfParser::parseMethod() {
-	uchar method = Http::DEFAULT;
+	uchar method = DEFAULT;
 	while (1) {
 		_token.loadNext();
 		switch (_token.getType()) {
 		case Token::SEMICOLON:
-			if (_newLocation._allowedMethods == Http::DEFAULT)
+			if (_newLocation._allowedMethods == DEFAULT)
 				throw parsingErr("Method definition");
 			return;
 
@@ -191,8 +194,10 @@ void ConfParser::nextServer() {
 			_newServer->_defaultLocation._overrides = _newServer->_defaults;
 			_token.consolidateBuffers(_newServer->_strvVecBuf,
 									  _newServer->_strBuf);
+			if (_newServer->_defaultLocation._overrides._root == "")
+				throw runtime_error("Cannot init server. No root defined.");
 			_servers.push_back(_newServer);
-			_newServer = new Server();
+			_newServer = new Server(_programDefaults);
 			_vecCursor = 0;
 			_token.resetSpanConsolidationIndex();
 			return;

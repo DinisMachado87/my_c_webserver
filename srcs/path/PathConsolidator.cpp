@@ -102,8 +102,6 @@ void PathConsolidator::rebuild() {
 		_path.setLen(1);
 		return;
 	}
-	if (!_hasChanges)
-		return;
 	string newPathStr;
 	newPathStr.reserve(_path.getLen());
 	for (size_t i = 0; i < _writeIdx; i++)

@@ -22,7 +22,8 @@ using std::stringstream;
 using std::vector;
 
 // Public constructors and destructors
-Server::Server() :
+Server::Server(const Location &programDefaults) :
+	_programDefaults(programDefaults),
 	_defaultLocation(_strvVecBuf),
 	_defaults(_strvVecBuf) {
 	_strBuf.append(DEFAULT_ROOT DEFAULT_INDEX);
@@ -70,6 +71,17 @@ const Location &Server::findLocation(const StrView &path) const {
 				 &_defaultLocation, &Location::printLocation);
 	return _defaultLocation;
 };
+
+bool Server::isAllowedMethod(uchar method, const Location &location) const {
+	if (!location.usingDefaultMethods() && location.isAllowedMethod(method))
+		return true;
+	if (!_defaultLocation.usingDefaultMethods()
+		&& _defaultLocation.isAllowedMethod(method))
+		return true;
+	if (_programDefaults.isAllowedMethod(method))
+		return true;
+	return false;
+}
 
 // Print, debug and Logging
 

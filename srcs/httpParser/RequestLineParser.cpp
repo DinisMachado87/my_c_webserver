@@ -7,6 +7,7 @@
 #include "Logger.hpp"
 #include "RequestLine.hpp"
 #include "RequestPathConsolidator.hpp"
+#include <iostream>
 #include <stdexcept>
 
 using std::runtime_error;
@@ -29,7 +30,7 @@ void RequestLineParser::parse() {
 		case METHOD:
 			_token.loadNextOfType(Token::WORD, "Http Method");
 			_requestLine._method = _expect.method();
-			if (Http::DEFAULT == _requestLine._method)
+			if (DEFAULT == _requestLine._method)
 				throw HttpError::HTTP_BAD_REQUEST;
 			_state = PATH;
 
@@ -50,7 +51,8 @@ void RequestLineParser::parse() {
 		case NEWLINE:
 			switch (_token.handleNewline()) {
 			case HttpToken::SINGLE:
-				_mainState = HEADERS;
+				_mainState = VALIDATE_REQUEST_LINE;
+				return;
 			case HttpToken::DOUBLE:
 				_mainState = RETURN;
 			}

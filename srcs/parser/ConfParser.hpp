@@ -13,41 +13,42 @@ private:
 	enum e_state { NONE, SERVER, LOCATION, ENDOFILE };
 	enum e_block { INIT_LOCATION, ENDLINE, ENDBLOCK, ENDFILE };
 
-	std::vector<Server *>&	_servers;
-	Server*					_newServer;
-	Location				_newLocation;
+	const Location &_programDefaults;
+	std::vector<Server *> &_servers;
+	Server *_newServer;
+	Location _newLocation;
 
-	const char*	_curStrConfig;
-	uint		_vecCursor;
-	Token		_token;
-	Expect		_expect;
+	const char *_curStrConfig;
+	uint _vecCursor;
+	Token _token;
+	Expect _expect;
 
 	// Explicit disables
 	ConfParser();
-	ConfParser& operator=(const ConfParser& other);
-	ConfParser(const ConfParser& other);
+	ConfParser &operator=(const ConfParser &other);
+	ConfParser(const ConfParser &other);
 
 	// Methods
-	bool			isMethod();
-	void			nextServer();
-	uchar			parseServer();
-	void			parseServerLine();
-	void			parseLocation();
-	void			parseLocationParam();
-	bool			parseOverrides(Overrides& overrides);
-	void			parseMethod();
+	bool isMethod();
+	void nextServer();
+	uchar parseServer();
+	void parseServerLine();
+	void parseLocation();
+	void parseLocationParam();
+	bool parseOverrides(Overrides &overrides);
+	void parseMethod();
 
 	// Error handler
-	std::runtime_error	parsingErr(const char* expected) const ;
-	
+	std::runtime_error parsingErr(const char *expected) const;
+
 public:
 	// Constructors and destructors
-	ConfParser(std::string& configStr, std::vector<Server*>& servers);
+	ConfParser(std::string &configStr, std::vector<Server *> &servers,
+			   const Location &programDefaults);
 	~ConfParser();
 
 	// Methods
-	void	createServers();
+	void createServers();
 };
 
 #endif
-

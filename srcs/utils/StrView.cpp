@@ -250,7 +250,7 @@ StrView StrView::lastSplitBefore(const char c) const {
 	while (1) {
 		size_t nextDivider = find(c, curOffset);
 		if (nextDivider == string::npos)
-			return StrView(_rawBuffer, curOffset, nextDivider);
+			return StrView();
 		if (nextDivider > UINT_MAX)
 			throw runtime_error(TRACED("uint overflow"));
 		curOffset = static_cast<uint>(nextDivider);

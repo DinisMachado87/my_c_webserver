@@ -2,14 +2,17 @@
 
 #include "PathConsolidator.hpp"
 #include "RequestPath.hpp"
+#include "StrView.hpp"
 
 class RequestPathConsolidator : public PathConsolidator {
-	bool _isDir;
-	bool _isCgi;
-	StrView _cgiExtension;
+	uchar _type;
+	StrView _sufix;
+	StrView _file;
+	StrView _dirPath;
 
 	RequestPathConsolidator(const StrView &path);
 	void extractHttpInfo();
+	void trimPath();
 
 public:
 	static RequestPath consolidate(const StrView &path);

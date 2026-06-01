@@ -25,8 +25,7 @@ const StrView &RequestLine::getPathQuery() const { return _path.getQuery(); }
 const char *RequestLine::getMethodStr() const { return g_methods[_method]; };
 
 void RequestLine::print(std::ostream &stream) const {
-	stream << "Method: " << getMethodStr();
-	stream << " | " << _path << "\n";
+	stream << "Method: " << getMethodStr() << "\n" << _path << "\n";
 }
 
 std::ostream &operator<<(std::ostream &os, const RequestLine &reqLine) {

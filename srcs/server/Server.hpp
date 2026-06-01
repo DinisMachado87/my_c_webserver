@@ -21,6 +21,7 @@ struct Listen {
 
 class Server {
 private:
+	const Location &_programDefaults;
 	Location _defaultLocation;
 
 	// Explicit Disables
@@ -50,10 +51,11 @@ public:
 	std::vector<Listen> _listen;
 	std::vector<Location> _locations;
 	// Constructors and destructors
-	Server();
+	Server(const Location &_programDefaults);
 	~Server();
 
 	// Methods
+	bool isAllowedMethod(uchar method, const Location &location) const;
 	void reserve(uint sizeStrBuf, uint sizeStrvVecBuf, uint sizeintVecBuf);
 	// Getters Server Vars
 	size_t getListenLen();

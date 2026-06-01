@@ -18,6 +18,7 @@ protected:
 	uchar _type;
 	int _lineN;
 	bool _pendingQuote;
+	bool _needsMoreInput;
 
 	size_t _strBuffSize;
 	std::vector<StrView *> _tokensInUse;
@@ -54,6 +55,8 @@ public:
 	static const uchar *configDelimiters();
 
 	// Methods
+	void resetNeedsMoreInputFlag();
+	bool needsMoreInput();
 	void printBuffer();
 	void consolidateStrVMap(std::map<uint, StrView> &strVMap,
 							std::string &newStrBuf);
@@ -63,7 +66,6 @@ public:
 							std::string &newStrBuf);
 	void consolidateStrVSpans(std::vector<StrView> &vecBuf,
 							  std::string &newStrBuf);
-	uchar loadHttpNewLine();
 	void loadNextChunk(const size_t size);
 	bool loadNextHex(size_t *ret);
 	void loadDigitsUntil(const char c);

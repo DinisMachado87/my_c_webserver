@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Expect.hpp"
+#include "HttpHeadersParser.hpp"
 #include "HttpStates.hpp"
 #include "HttpToken.hpp"
 #include "RequestLineParser.hpp"
@@ -21,12 +22,13 @@ private:
 	Response *_response;
 
 	RequestLineParser _requestLineParser;
+	HttpHeadersParser _headersParser;
 
 	ssize_t _charRead;
 	ssize_t _headerLen;
 	uchar _state;
+	uchar _subState;
 	size_t _nextBodySection;
-	bool _needsMoreInput;
 
 	std::vector<StrView> _chunks;
 	bool _toGetChunk;
@@ -65,11 +67,6 @@ public:
 	// Constructors and destructors
 	HttpParser(const Server &server, int fd);
 	~HttpParser();
-
-	// Operators overload
-
-	// Getters and setters
-
 	// Methods
 	Request *recvAndParse();
 };
