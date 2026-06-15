@@ -28,19 +28,15 @@ Location::Location(std::vector<StrView> &vecBuf) :
 	_allowedMethods(DEFAULT) {}
 
 const Overrides &Location::getOverrides() const { return _overrides; }
-const char *Location::getPath() const { return _path.getStart(); }
-const char *Location::getReturnPath() const { return _returnPath.getStart(); }
-const char *Location::getUploadPath() const { return _uploadPath.getStart(); }
+const char *Location::getPath() const { return _path.data(); }
+const char *Location::getReturnPath() const { return _returnPath.data(); }
+const char *Location::getUploadPath() const { return _uploadPath.data(); }
 uint Location::getReturncode() const { return _returnCode; }
 bool Location::getUploadEnabled() const { return _uploadEnable; }
 
-const char *Location::getRewriteOldPath() const {
-	return _rewrite_old.getStart();
-}
+const char *Location::getRewriteOldPath() const { return _rewrite_old.data(); }
 
-const char *Location::getRewriteNewPath() const {
-	return _rewrite_new.getStart();
-}
+const char *Location::getRewriteNewPath() const { return _rewrite_new.data(); }
 
 bool Location::usingDefaultMethods() const {
 	return (_allowedMethods == DEFAULT ? true : false);
@@ -58,13 +54,13 @@ const Span<StrView> &Location::getCgiExtensions() const {
 }
 
 const char *Location::findCgiPath(StrView &extention) const {
-	return findCgiPath(extention.getStart());
+	return findCgiPath(extention.data());
 }
 
 const char *Location::findCgiPath(const char *extention) const {
 	for (size_t i = 0; i < _cgiExtensions.len(); i++)
 		if (_cgiExtensions[i].compare(extention))
-			return _cgiPath[i].getStart();
+			return _cgiPath[i].data();
 	return NULL;
 }
 
@@ -77,7 +73,7 @@ void Location::printStrvSpan(const char *msg, const Span<StrView> &span,
 	size_t i = 0;
 	stream << msg;
 	for (i = 0; i < span.len(); i++)
-		stream << safeStr(span[i].getStart()) << ", ";
+		stream << safeStr(span[i].data()) << ", ";
 	if (i == 0)
 		stream << "NONE";
 	stream << '\n';

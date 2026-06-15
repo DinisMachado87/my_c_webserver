@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>webserv demo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>webserv demo</h1>
+  </header>
+
+  <!-- POST: file upload -->
+  <section>
+    <h2>Upload a file <span class="tag post">POST</span></h2>
+    <input type="file" id="file-input">
+    <button onclick="uploadFile()">Upload</button>
+    <pre id="upload-result"></pre>
+  </section>
+
+  <!-- DELETE -->
+	<section>
+	  <h2>Uploaded files <span class="tag delete">DELETE</span></h2>
+	  <button onclick="loadFiles()">Refresh file list</button>
+	  <div id="file-list"></div>
+	</section>
+  <!-- CGI form -->
+  <section>
+    <h2>CGI form <span class="tag cgi">CGI</span></h2>
+    <form action="/cgi-bin/form.py" method="POST">
+      <input type="text" name="name" placeholder="Your name" value="student">
+      <textarea name="message">Hello from the eval!</textarea>
+      <button type="submit">Submit to CGI</button>
+    </form>
+  </section>
+
+  <!-- Redirect -->
+	<section>
+	  <h2>Redirect <span class="tag post">301</span></h2>
+	  <button onclick="demoRedirect()">GET /old → 301 redirect</button>
+	  <pre id="redirect-result"></pre>
+	</section>
+
+  <!-- Error pages -->
+  <section>
+    <h2>Error pages</h2>
+    <form action="/does-not-exist" method="GET">
+      <button type="submit">GET /does-not-exist → 404</button>
+    </form>
+  </section>
+
+<script src="/script.js"></script>
+</body>
+</html>

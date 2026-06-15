@@ -1,276 +1,178 @@
 #include "StrView.hpp"
-#include "Colors.hpp"
 #include "Logger.hpp"
-#include "webServ.hpp"
 #include <climits>
-#include <cstddef>
 #include <cstring>
-#include <iostream>
-#include <ostream>
-#include <sstream>
-#include <stdexcept>
 #include <string>
-#include <sys/types.h>
 #include <unistd.h>
 #include <vector>
 
-using std::ostream;
-using std::runtime_error;
 using std::string;
-using std::stringstream;
 using std::vector;
 
-string StrView::_empty = "";
+// _data is never NULL; default and null-input cases point here instead.
+// This makes strncmp/memchr safe to call with size 0 without extra guards.
+static const char s_empty[] = "";
 
-// Public constructors and destructors
-StrView::StrView(std::string &buffer, const uint offset, const uint len) :
-	_rawBuffer(&buffer),
-	_offset(offset),
-	_len(len) {}
-
-StrView::StrView(std::string *buffer, const uint offset, const uint len) :
-	_rawBuffer(&(*buffer)),
-	_offset(offset),
-	_len(len) {}
-
+// Constructors
 StrView::StrView() :
-	_rawBuffer(&_empty),
-	_offset(0),
-	_len(0) {}
+	_data(s_empty),
+	_size(0) {}
 
-StrView::StrView(std::string &buffer) :
-	_rawBuffer(&buffer),
-	_offset(0),
-	_len(0) {}
+StrView::StrView(const char *str) :
+	_data(str ? str : s_empty),
+	_size(str ? std::strlen(str) : 0) {}
+
+StrView::StrView(const char *data, size_t size) :
+	_data(data ? data : s_empty),
+	_size(data ? size : 0) {}
+
+StrView::StrView(char *data, size_t size) :
+	_data(data ? data : s_empty),
+	_size(data ? size : 0) {}
+
+StrView::StrView(const std::string &s) :
+	_data(s.c_str()),
+	_size(s.size()) {}
 
 StrView::StrView(const StrView &other) :
-	_rawBuffer(other._rawBuffer),
-	_offset(other._offset),
-	_len(other._len) {}
+	_data(other._data),
+	_size(other._size) {}
 
 StrView::~StrView() {}
 
-// Operators overload
+// Operators
 StrView &StrView::operator=(const StrView &other) {
 	if (this == &other)
 		return *this;
-
-	this->_rawBuffer = other._rawBuffer;
-	this->_offset = other._offset;
-	this->_len = other._len;
-
+	_data = other._data;
+	_size = other._size;
 	return *this;
 }
 
-StrView &StrView::operator=(StrView &other) {
-	if (this == &other)
-		return *this;
-
-	this->_rawBuffer = other._rawBuffer;
-	this->_offset = other._offset;
-	this->_len = other._len;
-
-	return *this;
-}
-
-bool StrView::operator==(const StrView &other) const {
-	if (_len != other._len)
-		return false;
-	return strncmp(getStart(), other.getStart(), _len) == 0;
-}
+bool StrView::operator==(const StrView &other) const { return compare(other); }
 
 bool StrView::operator!=(const StrView &other) const {
 	return !(*this == other);
 }
 
-bool StrView::operator==(const char *str) const { return compare(str); }
+bool StrView::operator==(const char *str) const {
+	return *this == StrView(str);
+}
+
 bool StrView::operator!=(const char *str) const { return !(*this == str); }
 
 bool StrView::operator<(const StrView &other) const {
-	int cmpResult = strncmp(getStart(), other.getStart(),
-							_len < other._len ? _len : other._len);
-	if (cmpResult != 0)
-		return cmpResult < 0;
-	return _len < other._len;
+	int r = std::strncmp(_data, other._data,
+						 _size < other._size ? _size : other._size);
+	if (r != 0)
+		return r < 0;
+	return _size < other._size;
 }
 
 // Getters
-const char *StrView::getStart() const { return _rawBuffer->c_str() + _offset; };
-const char *StrView::getEnd() const { return getStart() + (_len - 1); }
-string StrView::getStr() const { return string(getStart(), _len); }
-size_t StrView::getBufferSize() const { return _rawBuffer->length(); }
-uint StrView::getOffset() const { return _offset; };
-uint StrView::getLen() const { return _len; };
+const char *StrView::data() const { return _data; }
+const char *StrView::end() const { return _data + _size; }
+size_t StrView::size() const { return _size; }
+bool StrView::empty() const { return _size == 0; }
+string StrView::getStr() const { return string(_data, _size); }
 
-// Setters
-void StrView::setBuffer(std::string &newBuffer) { _rawBuffer = &newBuffer; }
-void StrView::setLen(uint len) { _len = len; }
+void StrView::setSize(size_t size) { _size = size; }
+void StrView::setStart(const char *str) { _data = str; }
 
-void StrView::setStart(const char *start) {
-	_offset = start - _rawBuffer->c_str();
+// Modifiers
+void StrView::removePrefix(size_t n) {
+	if (n >= _size) {
+		_data += _size;
+		_size = 0;
+	} else {
+		_data += n;
+		_size -= n;
+	}
 }
 
-void StrView::setStartAndLen(const char *start, uint len) {
-	_offset = start - _rawBuffer->c_str();
-	_len = len;
+void StrView::removeSuffix(size_t n) {
+	if (n >= _size)
+		_size = 0;
+	else
+		_size -= n;
 }
 
-// Public Methods
-void StrView::updateOffset(uint increase) { _offset += increase; }
-void StrView::printStrV() const { write(1, getStart(), _len); }
-void StrView::streamStrV(std::stringstream &stream) const {
-	stream << getStr() << "\n";
-}
-void StrView::printBuffer() const {
-	write(1, _rawBuffer->c_str(), _rawBuffer->length());
-}
-bool StrView::compare(StrView &strV) const { return compare(strV.getStart()); }
-void StrView::nullTerminate() { _rawBuffer[_offset + _len - 1] = '\0'; }
-void StrView::trimEnd(const size_t trimSize) {
-	_len > trimSize ? _len -= trimSize : 0;
+// Methods
+bool StrView::compare(const StrView &other) const {
+	if (_size != other._size)
+		return false;
+	return compare(other, _size);
 }
 
-bool StrView::compare(const char *str) const {
-	if (OK == strncmp(getStart(), str, _len) && str[_len] == '\0')
-		return true;
-	return false;
-};
-
-bool StrView::ncompare(const char *str, size_t len) const {
-	if (OK == strncmp(getStart(), str, len))
-		return true;
-	return false;
-};
-
-void StrView::move(std::string &toBuffer) {
-	LOG(Logger::CONTENT, getStr().c_str());
-
-	int offset = toBuffer.length();
-	toBuffer.append(getStart(), _len);
-	toBuffer.push_back('\0');
-	_rawBuffer = &toBuffer;
-	_offset = offset;
+bool StrView::compare(const StrView &other, size_t len) const {
+	if (len > _size || len > other._size)
+		return false;
+	return std::strncmp(_data, other._data, len) == 0;
 }
 
-void StrView::replace(const uint startOffset, const StrView &toInsert) {
-	uint insertStart = _offset + startOffset;
-	_rawBuffer->replace(insertStart, toInsert.getLen(), toInsert.getStart());
-}
-
-void StrView::nreplace(const uint startOffset, const StrView &toInsert,
-					   const uint len) {
-	uint insertStart = _offset + startOffset;
-	_rawBuffer->replace(insertStart, len, toInsert.getStr());
-}
-
-const char *StrView::has(const char *color, const bool hasColor) const {
-	return (hasColor ? color : "");
-}
-
-void StrView::info(ostream &ostream, const char item, const char *color) const {
-	const bool s = (item == 's');				   // [s]tring
-	const bool p = (item == 'a') || (item == 'p'); // [a]ll || buffer [p]ointer
-	const bool l = (item == 'a') || (item == 'l'); // [a]ll || [l]ength
-	const bool o = (item == 'a') || (item == 'o'); // [a]ll || [o]ffset
-
-	ostream << (s ? color : YELLOW) << getStr() << RESET << " |";
-
-	ostream << has(color, p) << " pt:" << std::hex
-			<< (reinterpret_cast<size_t>(_rawBuffer) & 0xFF) << std::dec
-			<< has(RESET, p);
-
-	ostream << has(color, l) << " l:" << _len << has(RESET, l);
-	ostream << has(color, o) << " o:" << _offset << has(RESET, o);
-}
-
-void StrView::streamStrView(stringstream &ostream) {
-	ostream << getStr();
-	ostream << "|buf:" << &_rawBuffer << "|len:" << _len << "|off:" << _offset;
-}
-
-void StrView::intoStream(ostream &stream) const {
-	const char *str = getStart();
-	str ? stream.write(str, getLen()) : stream << "NULL";
-}
-
-size_t StrView::findPosInBuffer(const char c, const size_t addedOffset) const {
-	return _rawBuffer->find(c, _offset + addedOffset);
-}
-
-size_t StrView::find(const char c, const size_t addedOffset) const {
-	if (_len <= addedOffset)
+size_t StrView::find(char c, size_t offset) const {
+	if (offset >= _size)
 		return string::npos;
-
-	size_t posInBuff = findPosInBuffer(c, addedOffset);
-	size_t posInStrView;
-
-	if (posInBuff == string::npos || posInBuff >= (_offset + _len))
+	const char *p = static_cast<const char *>(
+		std::memchr(_data + offset, c, _size - offset));
+	if (!p)
 		return string::npos;
-
-	posInStrView = posInBuff - _offset;
-	if (posInStrView > UINT_MAX)
-		throw runtime_error(
-			TRACED("uint overflow. StrView uses uint for memory lightness"));
-
-	return posInStrView;
+	return static_cast<size_t>(p - _data);
 }
 
 /*
- * Extracts a segment from startOffset until the next separator.
- * Returns the position of the separator, or string::npos if end reached.
+ * Extracts segment from offset until next occurrence of sep.
+ * out is set to the segment. Returns position of sep or npos if end reached.
  *
  * Ex. "/path/to" from offset 0 with '/'
- *     -> segment = "/path", returns 5
+ *     -> out = "/path", returns 5
  */
-size_t StrView::segmentUntil(char separator, uint startOffset,
-							 StrView &segment) const {
-	if (startOffset >= _len) {
-		segment = StrView(_rawBuffer, _offset + _len, 0);
+size_t StrView::segmentUntil(char sep, size_t offset, StrView &out) const {
+	if (offset >= _size) {
+		out = StrView(_data + _size, 0);
 		return string::npos;
 	}
-
-	size_t size_tNextPos = find(separator, startOffset + 1);
-	const bool isLast = (size_tNextPos == string::npos);
-
-	uint newoffset = _offset + startOffset;
-	uint nextPos = static_cast<uint>(size_tNextPos);
-	uint segLen;
-
-	if (!isLast && size_tNextPos > UINT_MAX)
-		throw runtime_error(TRACED("uint overflow"));
-
-	segLen = (isLast) ? _len - startOffset : nextPos - startOffset;
-
-	segment = StrView(_rawBuffer, newoffset, segLen);
-	return size_tNextPos;
+	size_t next = find(sep, offset + 1);
+	size_t segLen = (next == string::npos) ? _size - offset : next - offset;
+	out = StrView(_data + offset, segLen);
+	return next;
 }
 
-StrView StrView::lastSplitBefore(const char c) const {
-	size_t curOffset = 0;
-	while (1) {
-		size_t nextDivider = find(c, curOffset);
-		if (nextDivider == string::npos)
-			return StrView();
-		if (nextDivider > UINT_MAX)
-			throw runtime_error(TRACED("uint overflow"));
-		curOffset = static_cast<uint>(nextDivider);
-	}
-}
-
-vector<StrView> StrView::splitBefore(const char c) const {
-	vector<StrView> splitVec;
-	StrView cur = *this;
-	uint curOffset = 0;
+vector<StrView> StrView::splitBefore(char c) const {
+	vector<StrView> result;
+	size_t offset = 0;
+	StrView seg;
 
 	while (1) {
-		size_t nextDivider = segmentUntil(c, curOffset, cur);
-		if (nextDivider > UINT_MAX)
-			throw runtime_error(TRACED("uint overflow"));
-
-		splitVec.push_back(cur);
-		if (nextDivider == string::npos)
+		size_t next = segmentUntil(c, offset, seg);
+		result.push_back(seg);
+		if (next == string::npos)
 			break;
-		curOffset = static_cast<uint>(nextDivider);
+		offset = next;
 	}
-	return splitVec;
+	return result;
+}
+
+StrView StrView::lastSplitBefore(char c) const {
+	size_t offset = 0;
+	while (1) {
+		size_t next = find(c, offset);
+		if (next == string::npos)
+			return StrView(_data + offset, _size - offset);
+		offset = next + 1;
+	}
+}
+
+void StrView::printBuffer() const { write(1, _data, _size); }
+
+void StrView::intoStream(std::ostream &os) const {
+	if (_size)
+		os.write(_data, _size);
+}
+
+void StrView::move(char *dest) {
+	LOG(Logger::CONTENT, getStr().c_str());
+
+	memmove(dest, _data, _size);
+	_data = dest;
 }

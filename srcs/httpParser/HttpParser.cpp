@@ -81,7 +81,7 @@ void HttpParser::setError(const uint errorCode, const char *detailMsg) {
 }
 
 void HttpParser::validateKey(StrView Key) {
-	switch (*Key.getStart()) {
+	switch (*Key.data()) {
 	case ('H'):
 		if (Key.compare("Host") && _request->getHeaderValue(Key))
 			return setError(400, "Request has more than one host!");

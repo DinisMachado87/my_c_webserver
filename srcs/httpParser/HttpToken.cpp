@@ -64,8 +64,8 @@ StrView HttpToken::getBody(size_t bodySize) {
 
 void HttpToken::loadNextHex(size_t *ret) {
 	static const int hexLen = 16;
-	_strV.updateOffset(_strV.getLen());
-	const char *start = _strV.getStart();
+	_strV.removePrefix(_strV.size());
+	const char *start = _strV.data();
 
 	errno = 0;
 	char *end;

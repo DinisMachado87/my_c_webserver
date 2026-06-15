@@ -14,13 +14,13 @@ class Token {
 protected:
 	const uchar *const _isDelimiter;
 
+	StrView _parsingStr;
+
 	StrView _strV;
 	uchar _type;
-	int _lineN;
 	bool _pendingQuote;
 	bool _needsMoreInput;
 
-	size_t _strBuffSize;
 	std::vector<StrView *> _tokensInUse;
 	size_t _vecBuffConsolidationIndex;
 
@@ -32,7 +32,7 @@ private:
 
 public:
 	// Constructors and destructors
-	Token(const uchar *table, std::string &buffer);
+	Token(const uchar *table, const char *buffer);
 	~Token();
 
 	enum e_Types {
@@ -58,14 +58,12 @@ public:
 	void resetNeedsMoreInputFlag();
 	bool needsMoreInput();
 	void printBuffer();
-	void consolidateStrVMap(std::map<uint, StrView> &strVMap,
-							std::string &newStrBuf);
+	void consolidateStrVMap(std::map<uint, StrView> &strVMap, char *newStrBuf);
 	void printBuffers(std::stringstream &stream);
 	void resetSpanConsolidationIndex();
-	void consolidateBuffers(std::vector<StrView> &vecBuf,
-							std::string &newStrBuf);
-	void consolidateStrVSpans(std::vector<StrView> &vecBuf,
-							  std::string &newStrBuf);
+	void consolidateBuffers(std::vector<StrView> &vecBuf, char *dest,
+							size_t destSize);
+	void consolidateStrVSpans(std::vector<StrView> &vecBuf, char *newStrBuf);
 	void loadNextChunk(const size_t size);
 	bool loadNextHex(size_t *ret);
 	void loadDigitsUntil(const char c);
@@ -79,14 +77,14 @@ public:
 	uchar loadNextOfTypes(uchar *types, uint nTypes, const char *errStr);
 	uchar loadNextOfType(uchar type, const char *errStr);
 	std::runtime_error parsingErr(const char *expected) const;
-	void LoadParsingString(std::string &parsingString);
+	void LoadParsingString(char *parsingString);
 	char compare(const char **strArr, uchar len);
 	bool compare(StrView &strV) const;
 	bool compare(const char *str) const;
 	void extractQuote(const char *str);
 	void printToken() const;
 	void trackInUseToken(StrView *strV);
-	void consolidateBuffer(std::string &newBuffer);
+	void consolidateBuffer(char *newBuffer);
 	// geters
 	const char *getStart() const;
 	uchar getType() const;

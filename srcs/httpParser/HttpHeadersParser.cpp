@@ -28,9 +28,9 @@ void HttpHeadersParser::parseHeaders(const uchar curState) {
 			_state = VALUE;
 			_key = _token.getStrV();
 
-			if (*_key.getEnd() != ':')
+			if (*_key.end() != ':')
 				throw _token.parsingErr(":");
-			_key.trimEnd(1);
+			_key.removeSufix(1);
 
 		case VALUE:
 			_token.loadNextStr("http header Value");

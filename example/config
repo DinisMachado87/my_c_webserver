@@ -1,0 +1,43 @@
+server {
+    listen 127.0.0.1:8080;
+    root /example;
+    index index.html;
+    client_max_body_size 10m;
+
+    error_page 404 /error/404.html;
+    error_page 405 /error/405.html;
+
+    location / {
+        allowed_methods GET;
+        autoindexing off;
+    }
+
+	location /onedeep {
+		allowed_methods GET;
+	}
+
+	location /onedeep/twodeep {
+		allowed_methods GET;
+	}
+
+    location /uploads {
+        allowed_methods GET POST DELETE;
+        root /example;
+        autoindexing on;
+    }
+
+    location /cgi-bin {
+        allowed_methods GET POST;
+        cgi_extension .py;
+        cgi_path /usr/bin/python3;
+    }
+
+	location /old {
+		allowed_methods GET;
+		return 301 /new-location;
+	}
+
+	location /new-location {
+		allowed_methods GET;
+	}
+}

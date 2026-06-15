@@ -23,14 +23,14 @@ Overrides::Overrides(std::vector<StrView> &vecBuf) :
 	_autoindex(false) {}
 
 const Span<StrView> &Overrides::getIndex() const { return _index; };
-const char *Overrides::getRoot() const { return _root.getStart(); };
+const char *Overrides::getRoot() const { return _root.data(); };
 bool Overrides::isAutoindexed() const { return _autoindex; };
 size_t Overrides::getClientMaxBody() const { return _clientMaxBody; };
 size_t Overrides::getErrorMapSize() const { return _error.size(); };
 
 const char *Overrides::findErrorFile(uint errorCode) const {
 	std::map<uint, StrView>::const_iterator it = _error.find(errorCode);
-	return ((it != _error.end()) ? it->second.getStart() : NULL);
+	return ((it != _error.end()) ? it->second.data() : NULL);
 };
 
 const char *Overrides::safeStr(const char *str) const {
@@ -47,8 +47,8 @@ void Overrides::printMap(const char *label, ostream &stream) const {
 		return;
 	}
 	for (; curError != end; curError++)
-		stream << curError->first << ": "
-			   << safeStr(curError->second.getStart()) << '\n';
+		stream << curError->first << ": " << safeStr(curError->second.data())
+			   << '\n';
 }
 
 void Overrides::printOverrides(const char *label, ostream &stream) const {
@@ -61,6 +61,6 @@ void Overrides::printOverrides(const char *label, ostream &stream) const {
 
 	stream << "\t\tIndex files (LEN:" << _index.len() << "):";
 	for (size_t i = 0; i < _index.len(); i++)
-		stream << safeStr(_index[i].getStart()) << ", ";
+		stream << safeStr(_index[i].data()) << ", ";
 	stream << "\n\n";
 }

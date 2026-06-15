@@ -97,7 +97,7 @@ void Expect::errorPage(map<uint, StrView> &errorMap, string &strBuf) {
 
 void Expect::path(StrView *dest) {
 	_token.loadNextOfType(Token::WORD, "/<PATH>");
-	if (_token.getStrV().getStart()[0] == '/') {
+	if (_token.getStrV().data()[0] == '/') {
 		*dest = _token.getStrV();
 		_token.trackInUseToken(dest);
 		return;
@@ -112,12 +112,12 @@ void Expect::paths(StrView *paths, int n) {
 }
 
 uint Expect::findNextDivider(StrView &view) {
-	uint newLen = view.getLen();
+	uint newLen = view.size();
 	if (1 >= newLen)
 		return newLen;
 
 	size_t nextDivider = view.find('/', 1);
-	newLen = (nextDivider == string::npos) ? view.getLen()
+	newLen = (nextDivider == string::npos) ? view.size()
 										   : static_cast<uint>(nextDivider);
 	return newLen;
 }
@@ -148,8 +148,8 @@ size_t Expect::applySizeUnit(size_t value, char unit) {
 
 long Expect::number(const char **endPtr) {
 	StrView token = _token.getStrV();
-	const char *start = token.getStart();
-	const char *tokenEnd = start + token.getLen();
+	const char *start = token.data();
+	const char *tokenEnd = start + token.size();
 
 	errno = 0;
 	char *parseEnd;
@@ -173,7 +173,7 @@ int Expect::integer() {
 	long result = number(&end);
 
 	StrView token = _token.getStrV();
-	if (end != token.getStart() + token.getLen())
+	if (end != token.data() + token.size())
 		throw _token.parsingErr("Unexpected characters after number");
 	if (result > INT_MAX)
 		throw _token.parsingErr("Number exceeds INT_MAX");
@@ -193,7 +193,7 @@ size_t Expect::size() {
 	long result = number(&end);
 	size_t size = static_cast<size_t>(result);
 	StrView token = _token.getStrV();
-	const char *tokenEnd = token.getStart() + token.getLen();
+	const char *tokenEnd = token.data() + token.size();
 
 	if (end != tokenEnd) {
 		size = applySizeUnit(size, *end);

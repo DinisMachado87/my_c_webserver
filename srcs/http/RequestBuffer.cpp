@@ -45,7 +45,7 @@ bool RequestBuffer::recvAppend(uint fd) {
 	cStrBuffer[bytesRead] = '\0';
 	_buff.append(cStrBuffer);
 
-	size_t newOffset = _curRead.getOffset() + _curRead.getLen();
+	size_t newOffset = _curRead.getOffset() + _curRead.size();
 	_curRead = StrView(_buff, newOffset, bytesRead);
 
 	LOG_OBJ("_curRead: ", _curRead);

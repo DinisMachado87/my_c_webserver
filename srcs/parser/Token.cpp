@@ -23,14 +23,11 @@ using std::strtol;
 using std::vector;
 
 // Public constructors and destructors
-Token::Token(const uchar *table, std::string &parsingString) :
+Token::Token(const uchar *table, char *parsingString, size_t size) :
 	_isDelimiter(table),
-	_strV(StrView(parsingString)),
-	_type(0),
-	_lineN(0),
+	_parsingStr(StrView(parsingString, size)),
 	_pendingQuote(false),
 	_needsMoreInput(false),
-	_strBuffSize(0),
 	_vecBuffConsolidationIndex(0) {}
 
 Token::~Token() {}
@@ -77,7 +74,7 @@ void Token::extractQuote(const char *str) {
 				str++;
 			continue;
 		case QUOTE:
-			_strV.setLen(str - _strV.getStart());
+			_strV.setSize(str - _strV.data());
 			_pendingQuote = true;
 			return;
 		default:
@@ -87,15 +84,13 @@ void Token::extractQuote(const char *str) {
 }
 
 uchar Token::loadNext() { return loadNextCore(false); }
-
 uchar Token::loadNextStr() { return loadNextCore(true); }
 
 uchar Token::loadNextCore(const bool keepSpaces) {
-
-	_strV.updateOffset(_strV.getLen() + _pendingQuote);
+	_strV.removePrefix(_strV.size() + _pendingQuote);
 	_pendingQuote = false;
-	const char *str = _strV.getStart();
-	_strV.setLen(0);
+	const char *str = _strV.data();
+	_strV.setSize(0);
 
 	while (1) {
 		_type = _isDelimiter[(uchar)(*str)];
@@ -109,7 +104,7 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 				str++;
 			if (ENDOFILE == _isDelimiter[(uchar)(*str)])
 				_needsMoreInput = true;
-			_strV.setLen(str - _strV.getStart());
+			_strV.setSize(str - _strV.data());
 			return _type;
 		case SPACE: // Skip cursor
 			str++;
@@ -133,7 +128,7 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 				_needsMoreInput = true;
 				_type = WORD;
 			} else
-				_strV.setLen(str - _strV.getStart());
+				_strV.setSize(str - _strV.data());
 
 			return _type;
 
@@ -145,7 +140,7 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 
 		default:
 			_strV.setStart(str);
-			_strV.setLen(1);
+			_strV.setSize(1);
 			return _type;
 		}
 	}
@@ -177,13 +172,13 @@ uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr) {
 }
 
 bool Token::compare(const char *str) const {
-	const uchar len = _strV.getLen();
-	if (OK == strncmp(_strV.getStart(), str, len) && str[len] == '\0')
+	const uchar len = _strV.size();
+	if (OK == strncmp(_strV.data(), str, len) && str[len] == '\0')
 		return true;
 	return false;
 };
 
-bool Token::compare(StrView &strV) const { return compare(strV.getStart()); };
+bool Token::compare(StrView &strV) const { return compare(strV.data()); };
 
 char Token::compare(const char **strArr, uchar len) {
 	for (uchar i = 0; i < len; i++)
@@ -194,34 +189,26 @@ char Token::compare(const char **strArr, uchar len) {
 
 uchar Token::getType() const { return _type; }
 StrView Token::getStrV() const { return _strV; }
-int Token::getLineN() const { return _lineN; }
-const char *Token::getStart() const { return _strV.getStart(); }
-const char *Token::getEnd() const { return _strV.getEnd(); }
-
-size_t Token::getSizeLeft() const {
-	return (_strV.getBufferSize() - _strV.getOffset() - _strV.getLen());
-}
+const char *Token::getStart() const { return _strV.data(); }
+const char *Token::getEnd() const { return _strV.end(); }
+size_t Token::getSizeLeft() const { return (_strBuffSize - _strV.size()); }
 
 StrView Token::getRemaining() {
-	_strV.updateOffset(_strV.getLen());
-	_strV.setStart(_strV.getStart());
-	_strV.setLen(getSizeLeft());
+	_strV.removePrefix(_strV.size());
+	_strV.setSize(getSizeLeft());
 	return _strV;
 }
 
 void Token::loadNextChunk(const size_t size) {
-	_strV.updateOffset(_strV.getLen());
-	_strV.setStart(_strV.getStart());
-	_strV.setLen(size);
+	_strV.removePrefix(_strV.size());
+	_strV.setSize(size);
 }
 
-string Token::getString() const {
-	return (string(_strV.getStart(), _strV.getLen()));
-}
+string Token::getString() const { return (string(_strV.data(), _strV.size())); }
 
 void Token::trackInUseToken(StrView *strV) {
 	_tokensInUse.push_back(strV);
-	_strBuffSize += strV->getLen() + 1;
+	_strBuffSize += strV->size() + 1;
 }
 
 void Token::printBuffer() { _strV.printBuffer(); }
@@ -232,14 +219,14 @@ void Token::printBuffers(stringstream &stream) {
 		stream << _tokensInUse[i]->getStr() << "\n";
 }
 
-void Token::consolidateStrVMap(map<uint, StrView> &strVMap, string &newStrBuf) {
+void Token::consolidateStrVMap(map<uint, StrView> &strVMap, char *newStrBuf) {
 	LOG(Logger::LOG, "Consolidating Map Buffer: ");
 	map<uint, StrView>::iterator cur = strVMap.begin();
 	for (; cur != strVMap.end(); ++cur)
 		cur->second.move(newStrBuf);
 }
 
-void Token::consolidateStrVSpans(vector<StrView> &vecBuf, string &newStrBuf) {
+void Token::consolidateStrVSpans(vector<StrView> &vecBuf, char *newStrBuf) {
 	LOG(Logger::LOG, "Consolidating Span Buffer: ");
 
 	size_t i = _vecBuffConsolidationIndex;
@@ -249,7 +236,7 @@ void Token::consolidateStrVSpans(vector<StrView> &vecBuf, string &newStrBuf) {
 	_vecBuffConsolidationIndex = vecBuf.size();
 }
 
-void Token::consolidateBuffer(string &newBuf) {
+void Token::consolidateBuffer(char *newBuf) {
 	LOG(Logger::LOG, "Consolidating StrBuffer: ");
 
 	for (uint i = 0; i < _tokensInUse.size(); i++)
@@ -257,18 +244,13 @@ void Token::consolidateBuffer(string &newBuf) {
 	_tokensInUse.clear();
 }
 
-void Token::consolidateBuffers(vector<StrView> &vecBuf, string &newStrBuf) {
-	newStrBuf.reserve(newStrBuf.size() + _strBuffSize);
-	consolidateBuffer(newStrBuf);
-	consolidateStrVSpans(vecBuf, newStrBuf);
+void Token::consolidateBuffers(vector<StrView> &vecBuf, char *dest,
+							   size_t destSize) {
+	consolidateBuffer(dest);
+	consolidateStrVSpans(vecBuf, dest);
 	_strBuffSize = 0;
-}
-
-void Token::resetSpanConsolidationIndex() { _vecBuffConsolidationIndex = 0; }
-
-void Token::LoadParsingString(string &parsingString) {
-	_strV.setBuffer(parsingString);
 }
 
 bool Token::needsMoreInput() { return _needsMoreInput; }
 void Token::resetNeedsMoreInputFlag() { _needsMoreInput = false; }
+void Token::resetSpanConsolidationIndex() { _vecBuffConsolidationIndex = 0; }

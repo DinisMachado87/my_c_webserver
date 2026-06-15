@@ -57,7 +57,7 @@ string Server::formatIP(in_addr_t addr) const {
 
 // getters
 const Location &Server::findLocation(const StrView &path) const {
-	const uint pathLen = path.getLen();
+	const uint pathLen = path.size();
 
 	vector<Location>::const_iterator cur = _locations.begin();
 	vector<Location>::const_iterator end = _locations.end();

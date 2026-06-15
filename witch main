@@ -1,0 +1,71 @@
+[33m04fc9c9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdinis[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m Edit Makefile
+[33m7029ea5[m Rework path logic to differenciate file and dir
+[33m222a15e[m[33m ([m[1;31morigin/dinis[m[33m)[m Restructure and Refactor Parser Tools and http parser
+[33me004a72[m Refactor server
+[33m1efa659[m Refactor path
+[33m5a52bde[m Debug merge
+[33m67ac812[m Debug ConfParser StrView Consolidation for errors and clean logic for user defined root defaults and macro defined program defaults
+[33m9f814a1[m Debug ConfParser StrView Consolidation for errors and clean logic for user defined root defaults and macro defined program defaults
+[33m08ceb83[m Add test rule to makefile to run a single specific test
+[33m8264ba6[m Add _defaultLocation instance to server and adjust ConfParser for it
+[33mcde4392[m Adjust ConfigParser to new _defaultlocation in server
+[33m89ff4f8[m Add log _defaultLocation instance in Server and adjust config parsing
+[33m5751778[m Rework http parser and path normalizer
+[33mff495bb[m Add HttpParser testing
+[33m9c07bf0[m Add StrView ostream << overload
+[33m21ca067[m Move Signals Volatile global to Signals.cpp
+[33m6d82fad[m Add LOG_OBJ to log obj with ostream << overload
+[33m3e46880[m Update Makefile
+[33m05f9251[m Fix Sockets after merge
+[33md20a826[m Fix Makefile after merge
+[33m6c2309d[m Fix logger after merge
+[33m098020c[m Merge branch 'filter_dinis' into dinis
+[33m13a88bd[m[33m ([m[1;31morigin/filter_dinis[m[33m, [m[1;32mfilter_dinis[m[33m)[m Add ClientClosed exception
+[33m86c062e[m Refactor Logger and add numbers array support
+[33m8e7d8ce[m Rework Connection Read Body calls
+[33mb58deda[m Add error check in setNonBlocking
+[33m49faa0a[m Move log label position
+[33m5eddd4c[m Add Epoll out log
+[33m36c6a92[m Change Connection socket to level trigered
+[33ma6b0c0d[m Refactor logger and add labeled variants
+[33m9a59325[m Integrate Signals and gracefull exit
+[33ma66291d[m Debug logfile - No color and rewrite on restart
+[33md245531[m Rework logger for automated file, line, function tracing
+[33m980cfcf[m Rework logging
+[33m9b731fd[m Debug false full request cue through temporary requestReceivingBody pointer
+[33m0620db4[m Add truncate parameter to logger
+[33md0ad4c5[m Add support for read/wright body in several iterations
+[33m3c0b45a[m Debug Span consolidation
+[33m4c9c2a2[m Debug find CGI Path and refactor Server class
+[33m58d9198[m Add event flags change logging and debug flags
+[33m269a892[m Add Signal handeling
+[33m8480012[m Add null init to _responses and debug mainLoop
+[33ma6f84c5[m Ammend gitignore
+[33m3cacae5[m[33m ([m[1;31mnailit/filter_dinis[m[33m)[m Add Clock variations and LOGNUM options
+[33ma7479c7[m Debug log error and implementation in main
+[33m32943c6[m Add log err
+[33m3ec77c0[m Add Logger
+[33mf7e72c7[m Debug config parser
+[33mc64d188[m Debug Token for ConfParser
+[33m1bacf93[m Update Makefile
+[33ma5cec77[m Add parse body to http parser
+[33m906edfa[m Add parse body to http parser
+[33mcd2b8ad[m Add parseHeaders to http parser
+[33ma7a33be[m Add parseHeaders to http parser
+[33md1b1dba[m Add operator< overload to StrView to useas key in map
+[33m5919124[m Add operator< overload to StrView to useas key in map
+[33m75287d1[m Add http parser and request classes and parse Request line method and tests
+[33md76e66b[m Add http parser and request classes and parse Request line method and tests
+[33m7aaa841[m Add ConfParser support for different port/ip formats
+[33mcff857e[m Add epoll loop and handleIn Listening socket to create connection
+[33mb35d3a3[m Add handle in logic to listening socket and epoll loop logic
+[33m5b0aa4a[m Add StrView consolidate buffer and null terminate substrings. Debug adjustments to this change
+[33m6a24e6b[m Add Listening sockets and testing
+[33mcf5a62f[m debug and test Token
+[33m2f17802[m Add config parser and context
+[33m066dfb5[m Add StrView class
+[33ma5d44ec[m Rework token class and tests
+[33m7802655[m Add Token tests and rework class
+[33mff22647[m Add Token class
+[33m3f4bf74[m Add Makefile and redifine file structure for modular aproach and testing
+[33m578240f[m Add ASocket virtual base class and Listening socket implementation

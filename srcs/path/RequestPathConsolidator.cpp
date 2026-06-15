@@ -9,7 +9,7 @@ RequestPathConsolidator::RequestPathConsolidator(const StrView &path) :
 void RequestPathConsolidator::extractHttpInfo() {
 	if (_segments.empty())
 		return;
-	if ('/' == *_segments.back().getEnd()) {
+	if ('/' == *_segments.back().end()) {
 		_type = RequestPath::DIR;
 		if (_segments.size() > 1) {
 			_segments.pop_back();
@@ -19,8 +19,8 @@ void RequestPathConsolidator::extractHttpInfo() {
 	} else {
 		_file = _segments.back();
 		_sufix = _file.lastSplitBefore('.');
-		_type = ('.' == *_sufix.getStart()) ? RequestPath::EXECUTABLE
-											: RequestPath::FILE;
+		_type = ('.' == *_sufix.data()) ? RequestPath::EXECUTABLE
+										: RequestPath::FILE;
 	}
 }
 
@@ -29,7 +29,7 @@ void RequestPathConsolidator::trimPath() {
 		_dirPath = _path;
 	else {
 		_dirPath = _path;
-		_dirPath.trimEnd(_file.getLen());
+		_dirPath.removeSufix(_file.size());
 	}
 }
 
