@@ -81,20 +81,14 @@ void StrView::setStart(const char *str) { _data = str; }
 
 // Modifiers
 void StrView::removePrefix(size_t n) {
-	if (n >= _size) {
-		_data += _size;
-		_size = 0;
-	} else {
-		_data += n;
-		_size -= n;
-	}
+	size_t trimSize = (n < _size) ? n : _size;
+	_data += trimSize;
+	_size -= trimSize;
 }
 
 void StrView::removeSuffix(size_t n) {
-	if (n >= _size)
-		_size = 0;
-	else
-		_size -= n;
+	size_t trimSize = (n < _size) ? n : _size;
+	_size -= trimSize;
 }
 
 // Methods
@@ -170,9 +164,7 @@ void StrView::intoStream(std::ostream &os) const {
 		os.write(_data, _size);
 }
 
-void StrView::move(char *dest) {
-	LOG(Logger::CONTENT, getStr().c_str());
-
-	memmove(dest, _data, _size);
+void StrView::consolidate(char *dest) {
+	memcpy(dest, _data, _size);
 	_data = dest;
 }

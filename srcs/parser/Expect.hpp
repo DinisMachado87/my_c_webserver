@@ -3,6 +3,7 @@
 
 #include "Span.hpp"
 #include "Token.hpp"
+#include "webServ.hpp"
 #include <cstddef>
 #include <map>
 #include <netinet/in.h>
@@ -37,14 +38,14 @@ public:
 	uint16_t port(const std::string &portStr);
 	in_addr_t ip(std::string &ipStr);
 	int nextInteger();
-	void errorPage(std::map<uint, StrView> &errorMap, std::string &strBuf);
+	void errorPage(std::map<uint, StrView> &errorMap);
 	unsigned char word(const char *str1);
 	Span<StrView> wordVec(std::vector<StrView> &vecBuf, uint &vecCursor);
 	bool onOff();
 	int integer();
 	size_t size();
 	void paths(StrView *paths, int n);
-	void path(StrView *dest);
+	void path(StrView *dest, bool trackOn = TRACK);
 };
 
 #endif

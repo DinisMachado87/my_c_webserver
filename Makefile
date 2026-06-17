@@ -26,7 +26,7 @@ endif
 SRCS_MAIN		:= main.cpp
 # Sources modules (first word is the directory)
 SRCS_ENGINE		:= engine Engine.cpp Signals.cpp
-SRCS_SERVER		:= server Server.cpp Overrides.cpp Location.cpp
+SRCS_SERVER		:= server Server.cpp Location.cpp Overrides.cpp
 SRCS_HTTP		:= http Request.cpp Response.cpp RequestLine.cpp RequestBuffer.cpp
 SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp HttpParser.cpp HttpHeadersParser.cpp
 SRCS_PATH		:= path PathConsolidator.cpp RequestPathConsolidator.cpp Path.cpp RequestPath.cpp 

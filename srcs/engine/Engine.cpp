@@ -40,8 +40,7 @@ Engine::~Engine() {
 	while (server != _servers.end())
 		delete *server++;
 
-	if (_fdEpoll > 0)
-		close(_fdEpoll);
+	if (_fdEpoll > 0) close(_fdEpoll);
 }
 
 // Error handeling
@@ -85,14 +84,12 @@ void Engine::loadProgramDefaults() {
 
 void Engine::epoll_init() {
 	_fdEpoll = epoll_create(1);
-	if (_fdEpoll < 0)
-		throw handleError("Error Epoll_create: ", errno);
+	if (_fdEpoll < 0) throw handleError("Error Epoll_create: ", errno);
 }
 
 ASocket *Engine::getSocket(int fd) {
 	map<int, ASocket *>::iterator socket = _sockets.find(fd);
-	if (socket != _sockets.end())
-		return socket->second;
+	if (socket != _sockets.end()) return socket->second;
 	return NULL;
 }
 
@@ -101,18 +98,15 @@ void Engine::setEventTo(int epollFd, uint operation, uint eventType,
 	struct epoll_event event;
 	event.events = eventType;
 	event.data.ptr = socket;
-	if (OK == epoll_ctl(epollFd, operation, socketFd, &event))
-		return;
+	if (OK == epoll_ctl(epollFd, operation, socketFd, &event)) return;
 	throw handleError(TRACED("Epool_ctr"), errno);
 }
 
 void Engine::addSocket(ASocket *socket) {
-	if (!socket)
-		throw handleError("Error null socket", errno);
+	if (!socket) throw handleError("Error null socket", errno);
 
 	int fd = socket->getFd();
-	if (!socket || fd < 0)
-		throw handleError("Error adding socket", errno);
+	if (!socket || fd < 0) throw handleError("Error adding socket", errno);
 
 	_sockets[fd] = socket;
 	setEventTo(_fdEpoll, EPOLL_CTL_ADD, socket->trackCurEvents(EPOLLIN), fd,
@@ -189,8 +183,7 @@ void Engine::pollLoop() {
 		LOG_TITLE("New Loop");
 		nFds = epoll_wait(_fdEpoll, events, MAX_EVENTS, TIMEOUT);
 		if (ERR == nFds) {
-			if (errno == EINTR)
-				continue;
+			if (errno == EINTR) continue;
 			throw handleError(TRACED("Epoll_wait: "), errno);
 		}
 
@@ -202,12 +195,10 @@ void Engine::pollLoop() {
 				if (ev & EPOLLERR)
 					throw runtime_error(TRACED("EpollWait")
 										+ string(strerror(errno)));
-				if (ev & EPOLLHUP)
-					throw ClientClosed();
+				if (ev & EPOLLHUP) throw ClientClosed();
 				if (ev & EPOLLIN)
 					while (ASocket *connection = socket->handleIn())
-						if (connection)
-							addSocket(connection);
+						if (connection) addSocket(connection);
 				if (ev & EPOLLOUT) {
 					LOG(Logger::LOG, "Received EPOLLOUT");
 					socket->handleOut();

@@ -2,6 +2,7 @@
 #define CONFPARSER_HPP
 
 #include "Expect.hpp"
+#include "Overrides.hpp"
 #include "Server.hpp"
 #include "Token.hpp"
 #include <stdexcept>
@@ -13,12 +14,12 @@ private:
 	enum e_state { NONE, SERVER, LOCATION, ENDOFILE };
 	enum e_block { INIT_LOCATION, ENDLINE, ENDBLOCK, ENDFILE };
 
-	const Location &_programDefaults;
+	Location _programDefaults;
+
 	std::vector<Server *> &_servers;
 	Server *_newServer;
 	Location _newLocation;
 
-	const char *_curStrConfig;
 	uint _vecCursor;
 	Token _token;
 	Expect _expect;
@@ -29,6 +30,8 @@ private:
 	ConfParser(const ConfParser &other);
 
 	// Methods
+	void inheritUnsetParameters();
+	void consolidateBuffer();
 	bool isMethod();
 	void nextServer();
 	uchar parseServer();
@@ -36,7 +39,10 @@ private:
 	void parseLocation();
 	void parseLocationParam();
 	bool parseOverrides(Overrides &overrides);
-	void parseMethod();
+	void parseMethod(Overrides &overrides);
+
+	// Consolidation Methods
+	void consolidateBuffers();
 
 	// Error handler
 	std::runtime_error parsingErr(const char *expected) const;

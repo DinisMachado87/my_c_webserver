@@ -2,6 +2,7 @@
 
 #include "Path.hpp"
 #include "StrView.hpp"
+#include "webServ.hpp"
 
 class RequestPath : public Path {
 protected:

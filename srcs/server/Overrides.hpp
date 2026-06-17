@@ -6,26 +6,50 @@
 #include <cstddef>
 #include <map>
 #include <ostream>
+#include <vector>
 
-struct Overrides {
-	// Constructor
-	Overrides(std::vector<StrView> &vecBuf);
-	// Vars
+enum e_Field {
+	F_ROOT,
+	F_INDEX,
+	F_AUTOINDEX,
+	F_CLIENT_BODY,
+	F_ERROR,
+	F_METHODS,
+	F_NOT_OVERRIDES_FIELD,
+};
+
+class Overrides {
+private:
+	static const char *_methodStrs[4];
+
 	std::map<uint, StrView> _error;
 	Span<StrView> _index;
 	StrView _root;
 	size_t _clientMaxBody;
-	size_t _uploadMaxBody;
 	bool _autoindex;
+	uchar _allowedMethods;
+	uchar _set;
+
+	friend class ConfParser;
+	friend class ConfParserTest;
+
+public:
+	Overrides(std::vector<StrView> &vecBuf);
+
+	// Methods
+	void mergeFrom(const Overrides &parent);
 	// Getters
-	size_t getClientMaxBody() const;
-	size_t getUploadMaxBody() const;
-	const char *findErrorFile(uint errorCode) const;
 	bool isAutoindexed() const;
-	const char *getRoot() const;
 	const Span<StrView> &getIndex() const;
+	const char *getRoot() const;
+	const char *findErrorFile(uint errorCode) const;
 	size_t getErrorMapSize() const;
-	const char *safeStr(const char *str) const;
+	size_t getClientMaxBody() const;
+	uchar isAllowedMethod(uchar methodToCheck) const;
+	uchar getAllowedMethods() const;
+
+	// Print
+	void printMethods(std::ostream &stream) const;
 	void printOverrides(const char *label, std::ostream &stream) const;
 	void printMap(const char *label, std::ostream &stream) const;
 };

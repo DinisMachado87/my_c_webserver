@@ -4,7 +4,6 @@
 #include "StrView.hpp"
 #include "webServ.hpp"
 #include <cstddef>
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <sys/types.h>
@@ -21,8 +20,11 @@ protected:
 	bool _pendingQuote;
 	bool _needsMoreInput;
 
+	size_t _strVBuffSize;
 	std::vector<StrView *> _tokensInUse;
 	size_t _vecBuffConsolidationIndex;
+
+	friend class ConfParser;
 
 private:
 	// Explicit disables
@@ -32,7 +34,7 @@ private:
 
 public:
 	// Constructors and destructors
-	Token(const uchar *table, const char *buffer);
+	Token(const uchar *table, const char *buffer, size_t size);
 	~Token();
 
 	enum e_Types {
@@ -55,15 +57,15 @@ public:
 	static const uchar *configDelimiters();
 
 	// Methods
+	const char *findEndQuote(const char *str) const;
+	void addToStrBuffSize();
+	void resetConsolidationCounters();
+	size_t getStrVBuffsize();
 	void resetNeedsMoreInputFlag();
 	bool needsMoreInput();
 	void printBuffer();
-	void consolidateStrVMap(std::map<uint, StrView> &strVMap, char *newStrBuf);
 	void printBuffers(std::stringstream &stream);
 	void resetSpanConsolidationIndex();
-	void consolidateBuffers(std::vector<StrView> &vecBuf, char *dest,
-							size_t destSize);
-	void consolidateStrVSpans(std::vector<StrView> &vecBuf, char *newStrBuf);
 	void loadNextChunk(const size_t size);
 	bool loadNextHex(size_t *ret);
 	void loadDigitsUntil(const char c);
@@ -84,13 +86,13 @@ public:
 	void extractQuote(const char *str);
 	void printToken() const;
 	void trackInUseToken(StrView *strV);
-	void consolidateBuffer(char *newBuffer);
 	// geters
 	const char *getStart() const;
 	uchar getType() const;
 	StrView getStrV() const;
 	int getLineN() const;
 	std::string getString() const;
+	size_t getStrBuffSize() const;
 };
 
 #endif

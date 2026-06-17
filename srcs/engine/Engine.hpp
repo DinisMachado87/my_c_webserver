@@ -19,13 +19,11 @@ private:
 
 protected:
 	int _fdEpoll;
+	std::vector<Server *> _servers;
+	std::map<int, ASocket *> _sockets;
 
 	std::string _defaultsBuffer;
 	std::vector<StrView> _defaultsVecBuf;
-	Location _programdefaults;
-
-	std::vector<Server *> _servers;
-	std::map<int, ASocket *> _sockets;
 	// Methods
 	void loadProgramDefaults();
 	void logFlagUpdates(ASocket *socket, uint32_t events, uint32_t newEvents);

@@ -5,6 +5,10 @@
 // Unix return code
 #define OK 0
 #define ERR -1
+// Track
+#define TRACK true
+#define UNTRACKED false
+
 // Multical returns
 #define ONGOING false
 #define DONE true
@@ -16,8 +20,9 @@ enum methods { DEFAULT, GET, POST, DELETE };
 #define DEFAULT_METHODS {GET, POST, DELETE}
 #define DEFAULT_METHODS_LEN 3
 
-#define DEFAULT_ROOT "./defaultLocation/"
+#define DEFAULT_ROOT "/var/www/html"
 #define DEFAULT_INDEX "index.html"
+#define DEFAULT_AUTOINDEX false
 #define MB 1048576 // megabyte
 #define CLIENT_MAX_BODY MB
 #define UPLOAD_MAX_BODY 100 * MB

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RequestPath.hpp"
+
 class RequestLine {
 private:
 	RequestPath _path;

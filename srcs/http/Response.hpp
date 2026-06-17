@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-struct Location;
+class Location;
 class Request;
 
 class Response {

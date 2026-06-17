@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-class StrView {
+class StrView
+{
 	const char *_data;
 	size_t _size;
 
@@ -37,7 +38,7 @@ public:
 	std::string getStr() const; // allocates; avoid
 
 	// Methods
-	void move(char *dest);
+	void consolidate(char *dest);
 	void printBuffer() const;
 	void setStart(const char *str);
 	void setSize(size_t size);
@@ -55,7 +56,8 @@ public:
 	void intoStream(std::ostream &os) const;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const StrView &sv) {
+inline std::ostream &operator<<(std::ostream &os, const StrView &sv)
+{
 	sv.intoStream(os);
 	return os;
 }

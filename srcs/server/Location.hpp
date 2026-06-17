@@ -10,16 +10,9 @@
 #define DEFAULT_LOCATION -1
 #define NO_INDEX -2
 
-struct Location {
-public:
-	// Construnctor
-	Location(std::vector<StrView> &vecBuf);
-	Location();
-
-	static const char *_methodStrs[4];
-	// Substructs
+class Location {
+private:
 	Overrides _overrides;
-	// Member vars
 	Span<StrView> _cgiExtensions;
 	Span<StrView> _cgiPath;
 	StrView _path;
@@ -29,25 +22,29 @@ public:
 	StrView _uploadPath;
 	uint _returnCode;
 	bool _uploadEnable;
-	uchar _allowedMethods;
-	// Getters Location Vars
-	bool usingDefaultMethods() const;
-	uchar isAllowedMethod(uchar methodToCheck) const;
-	const char *findCgiPath(StrView &extention) const;
-	const char *findCgiPath(const char *extention) const;
-	const char *getPath() const;
-	const char *getUploadPath() const;
-	const char *getRewriteNewPath() const;
-	const char *getRewriteOldPath() const;
-	const char *getReturnPath() const;
+
+	friend class ConfParser;
+	friend class ConfParserTest;
+
+public:
+	Location(std::vector<StrView> &vecBuf);
+
+	// Read interface
+	const StrView &getPath() const;
+	const StrView &getReturnPath() const;
+	const StrView &getUploadPath() const;
+	const StrView &getRewriteOldPath() const;
+	const StrView &getRewriteNewPath() const;
+
+	const Overrides &getOverrides() const;
+	const char *findCgiPath(StrView &extension) const;
+	const char *findCgiPath(const char *extension) const;
 	uint getReturncode() const;
 	bool getUploadEnabled() const;
 	const Span<StrView> &getCgiExtensions() const;
 	const Span<StrView> &getCgiPath() const;
-	const Overrides &getOverrides() const;
-	// Mathods
-	const char *safeStr(const char *str) const;
-	void printMethods(std::ostream &stream) const;
+
+	// Print
 	void printLocation(std::ostream &stream) const;
 	void printLocation(ssize_t index, std::ostream &stream) const;
 	void printStrvSpan(const char *msg, const Span<StrView> &span,
