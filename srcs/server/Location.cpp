@@ -37,19 +37,20 @@ const char *Location::findCgiPath(StrView &extension) const {
 
 const char *Location::findCgiPath(const char *extension) const {
 	for (size_t i = 0; i < _cgiExtensions.len(); i++)
-		if (_cgiExtensions[i].compare(extension)) return _cgiPath[i].data();
+		if (_cgiExtensions[i].compare(extension))
+			return _cgiPath[i].data();
 	return NULL;
+}
+
+bool Location::isAllowedMethod(const uchar method) const {
+	return _overrides.isAllowedMethod(method);
 }
 
 // Print
 void Location::printStrvSpan(const char *msg, const Span<StrView> &span,
 							 ostream &stream) const {
-	size_t i = 0;
 	stream << msg;
-	for (i = 0; i < span.len(); i++)
-		stream << span[i].data() << ", ";
-	if (i == 0) stream << "NONE";
-	stream << '\n';
+	(span.len() > 0) ? stream << span << '\n' : stream << "NONE" << '\n';
 }
 
 void Location::printLocation(ostream &stream) const {
@@ -73,4 +74,5 @@ void Location::printLocation(ssize_t index, ostream &stream) const {
 	printStrvSpan("\tCGI Paths: ", _cgiPath, stream);
 
 	_overrides.printOverrides("\tOverrides", stream);
+	stream << "\n";
 }

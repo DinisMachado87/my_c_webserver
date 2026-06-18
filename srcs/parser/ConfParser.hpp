@@ -14,11 +14,11 @@ private:
 	enum e_state { NONE, SERVER, LOCATION, ENDOFILE };
 	enum e_block { INIT_LOCATION, ENDLINE, ENDBLOCK, ENDFILE };
 
-	Location _programDefaults;
-
 	std::vector<Server *> &_servers;
 	Server *_newServer;
 	Location _newLocation;
+
+	std::vector<StrView> &_defaultsVecBuff;
 
 	uint _vecCursor;
 	Token _token;
@@ -30,19 +30,19 @@ private:
 	ConfParser(const ConfParser &other);
 
 	// Methods
-	void inheritUnsetParameters();
-	void consolidateBuffer();
 	bool isMethod();
-	void nextServer();
+	bool parseOverrides(Overrides &overrides);
 	uchar parseServer();
+	void nextServer();
 	void parseServerLine();
 	void parseLocation();
 	void parseLocationParam();
-	bool parseOverrides(Overrides &overrides);
 	void parseMethod(Overrides &overrides);
 
 	// Consolidation Methods
-	void consolidateBuffers();
+	void inheritUnsetParameters();
+	void consolidatelocation(Location &loc, char *&dest);
+	void consolidateBuffer();
 
 	// Error handler
 	std::runtime_error parsingErr(const char *expected) const;
@@ -50,7 +50,7 @@ private:
 public:
 	// Constructors and destructors
 	ConfParser(std::string &configStr, std::vector<Server *> &servers,
-			   const Location &programDefaults);
+			   std::vector<StrView> &defaultsVecBuff);
 	~ConfParser();
 
 	// Methods

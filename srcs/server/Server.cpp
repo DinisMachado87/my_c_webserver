@@ -18,7 +18,7 @@ using std::vector;
 
 // Constructors and destructors
 Server::Server() :
-	_serverDefaults(_strvVecBuf) {}
+	_defaults(_strvVecBuf) {}
 
 Server::~Server() {}
 
@@ -26,16 +26,10 @@ Server::~Server() {}
 in_addr_t Listen::getHost() const { return _host; }
 uint16_t Listen::getPort() const { return _port; }
 
-const Listen &Server::getListen(size_t i) const { return _listen[i]; }
+const vector<Listen> &Server::getListen() const { return _listen; }
 size_t Server::getListenLen() const { return _listen.size(); }
 
 // Private helpers
-void Server::reserve(uint sizeStrBuf, uint sizeStrvVecBuf, uint sizeintVecBuf) {
-	_strBuf.reserve(sizeStrBuf);
-	_strvVecBuf.reserve(sizeStrvVecBuf);
-	_intVecBuf.reserve(sizeintVecBuf);
-}
-
 string Server::formatIP(in_addr_t addr) const {
 	struct in_addr in;
 	in.s_addr = addr;
@@ -52,12 +46,13 @@ const Location &Server::findLocation(const StrView &path) const {
 			return *cur;
 		}
 
-	return _serverDefaults;
+	return _defaults;
 }
 
 // Print
 void Server::getServerStr(ostream &stream) const {
-	if (!LOGGING) return;
+	if (!LOGGING)
+		return;
 
 	stream << "----- SERVER -----\n\nListen addresses:\n";
 	for (size_t i = 0; i < _listen.size(); i++)
@@ -65,7 +60,7 @@ void Server::getServerStr(ostream &stream) const {
 			   << ", Port: " << _listen[i].getPort() << '\n';
 	stream << '\n';
 
-	_serverDefaults.getOverrides().printOverrides("Server Defaults", stream);
+	_defaults.getOverrides().printOverrides("Server Defaults", stream);
 
 	stream << "\nLocations:\n";
 	for (size_t i = 0; i < _locations.size(); i++)

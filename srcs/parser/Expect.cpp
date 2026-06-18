@@ -18,7 +18,6 @@
 #include <vector>
 
 using std::map;
-using std::pair;
 using std::string;
 using std::vector;
 
@@ -33,20 +32,24 @@ uchar Expect::method() {
 	static const uchar size = 4;
 
 	for (int i = 1; i < size; i++)
-		if (true == _token.compare(g_methods[i])) return (i);
+		if (true == _token.compare(g_methods[i]))
+			return (i);
 	return DEFAULT;
 }
 
 bool Expect::onOff() {
 	_token.loadNextOfType(Token::WORD, "\"on/off\"");
-	if (_token.compare("on")) return (true);
-	if (_token.compare("off")) return (false);
+	if (_token.compare("on"))
+		return (true);
+	if (_token.compare("off"))
+		return (false);
 	throw _token.parsingErr("\"on/off\"");
 }
 
 uchar Expect::word(const char *str) {
 	_token.loadNextOfType(Token::WORD, str);
-	if (!_token.compare(str)) throw _token.parsingErr(str);
+	if (!_token.compare(str))
+		throw _token.parsingErr(str);
 	return Token::WORD;
 }
 
@@ -73,18 +76,17 @@ Span<StrView> Expect::wordVec(std::vector<StrView> &vecBuf, uint &vecCursor) {
 void Expect::errorPage(map<uint, StrView> &errorMap) {
 	uint code = nextInteger();
 	StrView pathPtr;
-	path(&pathPtr, UNTRACKED);
-	// UNTRACKED - it will be consolidated manually because of reallocations
+	path(&pathPtr);
 
 	errorMap.insert(std::make_pair(code, pathPtr));
 	_token.addToStrBuffSize();
 }
 
-void Expect::path(StrView *dest, bool trackOn) {
+void Expect::path(StrView *dest) {
 	_token.loadNextOfType(Token::WORD, "/<PATH>");
 	if (_token.getStrV().data()[0] == '/') {
 		*dest = _token.getStrV();
-		if (trackOn) _token.trackInUseToken(dest);
+		_token.addToStrBuffSize();
 		return;
 	}
 	throw _token.parsingErr("/<PATH>");
@@ -97,7 +99,8 @@ void Expect::paths(StrView *paths, int n) {
 
 uint Expect::findNextDivider(StrView &view) {
 	uint newLen = view.size();
-	if (1 >= newLen) return newLen;
+	if (1 >= newLen)
+		return newLen;
 
 	size_t nextDivider = view.find('/', 1);
 	newLen = (nextDivider == string::npos) ? view.size()
@@ -106,7 +109,8 @@ uint Expect::findNextDivider(StrView &view) {
 }
 
 size_t Expect::applySizeUnit(size_t value, char unit) {
-	if (unit == '\0') return value;
+	if (unit == '\0')
+		return value;
 
 	size_t multiplier;
 	switch (tolower(unit)) {
@@ -137,10 +141,14 @@ long Expect::number(const char **endPtr) {
 	char *parseEnd;
 	long result = strtol(start, &parseEnd, 10);
 
-	if (errno == ERANGE) throw _token.parsingErr("Number out of range");
-	if (parseEnd == start) throw _token.parsingErr("Expected number");
-	if (parseEnd > tokenEnd) throw _token.parsingErr("Invalid number format");
-	if (result < 0) throw _token.parsingErr("Negative number not allowed");
+	if (errno == ERANGE)
+		throw _token.parsingErr("Number out of range");
+	if (parseEnd == start)
+		throw _token.parsingErr("Expected number");
+	if (parseEnd > tokenEnd)
+		throw _token.parsingErr("Invalid number format");
+	if (result < 0)
+		throw _token.parsingErr("Negative number not allowed");
 
 	*endPtr = parseEnd;
 	return result;
@@ -153,7 +161,8 @@ int Expect::integer() {
 	StrView token = _token.getStrV();
 	if (end != token.data() + token.size())
 		throw _token.parsingErr("Unexpected characters after number");
-	if (result > INT_MAX) throw _token.parsingErr("Number exceeds INT_MAX");
+	if (result > INT_MAX)
+		throw _token.parsingErr("Number exceeds INT_MAX");
 
 	return static_cast<int>(result);
 }
@@ -183,9 +192,11 @@ size_t Expect::size() {
 in_addr_t Expect::ip(string &ipStr) {
 	const size_t nOctets = 4;
 
-	if (ipStr == "*" || ipStr == "0.0.0.0") return INADDR_ANY;
+	if (ipStr == "*" || ipStr == "0.0.0.0")
+		return INADDR_ANY;
 
-	if (ipStr == "localhost") ipStr = "127.0.0.1";
+	if (ipStr == "localhost")
+		ipStr = "127.0.0.1";
 
 	uchar octets[nOctets];
 	size_t start = 0;
@@ -219,7 +230,8 @@ in_addr_t Expect::ip(string &ipStr) {
 }
 
 uint16_t Expect::port(const string &portStr) {
-	if (portStr.empty()) throw _token.parsingErr("Invalid port number");
+	if (portStr.empty())
+		throw _token.parsingErr("Invalid port number");
 
 	char *end;
 	errno = 0;

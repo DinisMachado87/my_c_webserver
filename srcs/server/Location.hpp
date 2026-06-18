@@ -41,6 +41,7 @@ public:
 	const char *findCgiPath(const char *extension) const;
 	uint getReturncode() const;
 	bool getUploadEnabled() const;
+	bool isAllowedMethod(const uchar method) const;
 	const Span<StrView> &getCgiExtensions() const;
 	const Span<StrView> &getCgiPath() const;
 

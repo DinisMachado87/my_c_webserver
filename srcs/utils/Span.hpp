@@ -2,13 +2,14 @@
 #define SPAN_H
 
 #include "webServ.hpp"
+#include <ostream>
 #include <stdexcept>
 #include <vector>
 
 template <typename T> class Span {
 private:
 	std::vector<T> *_vecBuf;
-	uint _offset;
+	uchar _offset;
 	uchar _len;
 
 public:
@@ -53,5 +54,15 @@ public:
 
 	size_t len() const { return _len; }
 };
+
+template <typename T>
+std::ostream &operator<<(std::ostream &stream, const Span<T> &span) {
+	size_t i = 0;
+	for (; i < span.len(); i++) {
+		bool isLast = (i + 1 == span.len());
+		stream << span[i] << ((!isLast) ? ", " : "");
+	}
+	return stream;
+}
 
 #endif

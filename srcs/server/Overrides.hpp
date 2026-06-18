@@ -30,6 +30,7 @@ private:
 	uchar _allowedMethods;
 	uchar _set;
 
+	Overrides(std::vector<StrView> &vecBuf, uchar ProgramDefaultsAllSet);
 	friend class ConfParser;
 	friend class ConfParserTest;
 
@@ -41,7 +42,7 @@ public:
 	// Getters
 	bool isAutoindexed() const;
 	const Span<StrView> &getIndex() const;
-	const char *getRoot() const;
+	const StrView &getRoot() const;
 	const char *findErrorFile(uint errorCode) const;
 	size_t getErrorMapSize() const;
 	size_t getClientMaxBody() const;

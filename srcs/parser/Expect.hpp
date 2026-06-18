@@ -45,7 +45,7 @@ public:
 	int integer();
 	size_t size();
 	void paths(StrView *paths, int n);
-	void path(StrView *dest, bool trackOn = TRACK);
+	void path(StrView *dest);
 };
 
 #endif

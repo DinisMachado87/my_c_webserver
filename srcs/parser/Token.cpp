@@ -1,5 +1,4 @@
 #include "Token.hpp"
-#include "Logger.hpp"
 #include "StrView.hpp"
 #include "webServ.hpp"
 #include <cctype>
@@ -14,7 +13,6 @@
 #include <stdexcept>
 #include <string>
 #include <unistd.h>
-#include <vector>
 
 using std::string;
 using std::stringstream;
@@ -24,7 +22,6 @@ Token::Token(const uchar *table, const char *parsingString, size_t size) :
 	_isDelimiter(table),
 	_parsingStr(StrView(parsingString, size)),
 	_strV(StrView(parsingString, size)),
-	_pendingQuote(false),
 	_needsMoreInput(false),
 	_strVBuffSize(0),
 	_vecBuffConsolidationIndex(0) {}
@@ -36,8 +33,7 @@ std::runtime_error Token::parsingErr(const char *expected) const {
 	std::ostringstream oss;
 	oss << "Error Parsing config: "
 		<< "Expected \"" << expected << "\" "
-		<< "got \"" << getString() << "\" "
-		<< "in line " << getLineN() << "\"";
+		<< "got \"" << getString() << "\" ";
 
 	return std::runtime_error(oss.str());
 }
@@ -65,7 +61,8 @@ const char *Token::findEndQuote(const char *str) const {
 			throw std::runtime_error("Error tokenizer: unclosed quote");
 		case EXCAPE:
 			str++;
-			if (*str) str++;
+			if (*str)
+				str++;
 			continue;
 		case QUOTE:
 			return str;
@@ -77,10 +74,8 @@ const char *Token::findEndQuote(const char *str) const {
 
 uchar Token::loadNext() { return loadNextCore(false); }
 uchar Token::loadNextStr() { return loadNextCore(true); }
-
 uchar Token::loadNextCore(const bool keepSpaces) {
 	const char *cur = _parsingStr.data();
-	const char *const end = _parsingStr.end();
 
 	while (1) {
 		_type = _isDelimiter[(uchar)(*cur)];
@@ -134,13 +129,15 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 
 uchar Token::loadNextOfType(uchar type, const char *errStr) {
 	loadNext();
-	if (type != _type) throw parsingErr(errStr);
+	if (type != _type)
+		throw parsingErr(errStr);
 	return _type;
 }
 
 uchar Token::loadNextStr(const char *errStr) {
 	loadNextStr();
-	if (WORD != _type) throw parsingErr(errStr);
+	if (WORD != _type)
+		throw parsingErr(errStr);
 	return _type;
 }
 
@@ -148,23 +145,29 @@ uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr) {
 	loadNext();
 
 	while (nTypes--) {
-		if (*types == _type) return *types;
+		if (*types == _type)
+			return *types;
 		types++;
 	}
 	throw parsingErr(errStr);
 }
 
 bool Token::compare(const char *str) const {
-	const uchar len = _strV.size();
-	if (OK == strncmp(_strV.data(), str, len) && str[len] == '\0') return true;
+	const size_t charLen = strlen(str);
+	const size_t strVLen = _strV.size();
+	if (charLen != strVLen)
+		return false;
+	if (OK == strncmp(_strV.data(), str, strVLen))
+		return true;
 	return false;
 };
 
-bool Token::compare(StrView &strV) const { return compare(strV.data()); };
+bool Token::compare(StrView &strV) const { return _strV.compare(strV); };
 
 char Token::compare(const char **strArr, uchar len) {
 	for (uchar i = 0; i < len; i++)
-		if (OK == compare(strArr[i])) return i;
+		if (OK == compare(strArr[i]))
+			return i;
 	return -1;
 }
 
@@ -185,30 +188,8 @@ void Token::loadNextChunk(const size_t size) {
 	_strV.setSize(size);
 }
 
-string Token::getString() const { return (string(_strV.data(), _strV.size())); }
-size_t Token::getStrVBuffsize() { return _strVBuffSize; }
-
-void Token::trackInUseToken(StrView *strV) {
-	_tokensInUse.push_back(strV);
-	_strVBuffSize += strV->size();
-}
-
+string Token::getString() const { return _strV.getStr(); }
+size_t Token::getStrBuffSize() const { return _strVBuffSize; }
 void Token::addToStrBuffSize() { _strVBuffSize += _strV.size(); }
-
-void Token::resetConsolidationCounters() {
-	_tokensInUse.clear();
-	_strVBuffSize = 0;
-}
-
-void Token::printBuffer() { _strV.printBuffer(); }
-
-void Token::printBuffers(stringstream &stream) {
-	stream << "_tokensInUse: ";
-	for (size_t i = 0; i < _tokensInUse.size(); i++)
-		stream << _tokensInUse[i]->getStr() << "\n";
-}
 bool Token::needsMoreInput() { return _needsMoreInput; }
 void Token::resetNeedsMoreInputFlag() { _needsMoreInput = false; }
-void Token::resetSpanConsolidationIndex() { _vecBuffConsolidationIndex = 0; }
-
-size_t Token::getStrBuffSize() const { return _strVBuffSize; }

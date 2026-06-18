@@ -46,7 +46,7 @@ HttpParser::~HttpParser() { delete _request; }
 void HttpParser::validateRequestLine() {
 	const Location &location = _server.findLocation(_request->getPath());
 
-	if (!_server.isAllowedMethod(_request->getMethod(), location))
+	if (!location.isAllowedMethod(_request->getMethod()))
 		throw HttpError::HTTP_METHOD_NOT_ALLOWED;
 	LOG_LABELED(Logger::LOG, "Allowed ", g_methods[_request->getMethod()]);
 

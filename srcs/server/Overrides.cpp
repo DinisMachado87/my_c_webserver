@@ -12,9 +12,11 @@ using std::bitset;
 using std::map;
 using std::ostream;
 using std::size_t;
+using std::vector;
 
 const char *Overrides::_methodStrs[4] = {"DEFAULT", "GET", "POST", "DELETE"};
 
+// Constructor
 Overrides::Overrides(std::vector<StrView> &vecBuf) :
 	_index(vecBuf),
 	_clientMaxBody(0),
@@ -22,9 +24,26 @@ Overrides::Overrides(std::vector<StrView> &vecBuf) :
 	_allowedMethods(DEFAULT),
 	_set(0) {}
 
+/* Protected constructor for temp Programdefaults used in ConfParser
+// inheritUnsetValues() */
+Overrides::Overrides(vector<StrView> &vecBuf, uchar ProgramDefaultsAllSet) :
+	_index(vecBuf),
+	_root(DEFAULT_ROOT),
+	_clientMaxBody(CLIENT_MAX_BODY),
+	_autoindex(false),
+	_allowedMethods(DEFAULT),
+	_set(ProgramDefaultsAllSet) {
+	static const uchar m[] = DEFAULT_METHODS;
+	for (int i = 0; i < DEFAULT_METHODS_LEN; i++)
+		_allowedMethods |= (1 << m[i]);
+
+	vecBuf.push_back(StrView(DEFAULT_INDEX));
+	_index = Span<StrView>(vecBuf, 0, 1);
+}
+
 // Getters
 const Span<StrView> &Overrides::getIndex() const { return _index; }
-const char *Overrides::getRoot() const { return _root.data(); }
+const StrView &Overrides::getRoot() const { return _root; }
 bool Overrides::isAutoindexed() const { return _autoindex; }
 size_t Overrides::getClientMaxBody() const { return _clientMaxBody; }
 size_t Overrides::getErrorMapSize() const { return _error.size(); }
@@ -75,16 +94,21 @@ void Overrides::printMap(const char *label, ostream &stream) const {
 }
 
 void Overrides::printMethods(ostream &stream) const {
-	bool none = true;
 	stream << "\t\tAllowed Methods (bitset: " << bitset<8>(_allowedMethods)
 		   << "): ";
+	if (!_allowedMethods) {
+		stream << "NONE\n";
+		return;
+	}
+
+	uchar count = 0;
 	for (size_t method = GET; method <= DELETE; method++)
-		if ((1 << method) & _allowedMethods) {
-			stream << _methodStrs[method] << " ,";
-			none = false;
-		}
-	if (none) stream << "NONE";
-	stream << '\n';
+		if ((1 << method) & _allowedMethods)
+			count++;
+
+	for (size_t method = GET; method <= DELETE; method++)
+		if ((1 << method) & _allowedMethods)
+			stream << _methodStrs[method] << (--count ? ", " : "\n");
 }
 
 void Overrides::printOverrides(const char *label, ostream &stream) const {
@@ -95,7 +119,7 @@ void Overrides::printOverrides(const char *label, ostream &stream) const {
 	printMap("\t\tError pages: ", stream);
 	stream << "\t\tIndex files (LEN:" << _index.len() << "): ";
 	for (size_t i = 0; i < _index.len(); i++)
-		stream << _index[i].data() << ", ";
+		stream << _index[i] << ", ";
 	stream << '\n';
 	printMethods(stream);
 }

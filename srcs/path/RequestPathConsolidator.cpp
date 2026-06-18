@@ -1,6 +1,5 @@
 #include "RequestPathConsolidator.hpp"
 #include "RequestPath.hpp"
-#include <iostream>
 
 RequestPathConsolidator::RequestPathConsolidator(const StrView &path) :
 	PathConsolidator(path),
@@ -29,7 +28,7 @@ void RequestPathConsolidator::trimPath() {
 		_dirPath = _path;
 	else {
 		_dirPath = _path;
-		_dirPath.removeSufix(_file.size());
+		_dirPath.removeSuffix(_file.size());
 	}
 }
 

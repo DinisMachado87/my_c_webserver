@@ -25,12 +25,11 @@ public:
 class Server {
 private:
 	// Contiguous StrView buffers
-	std::string _strBuf;
-	std::vector<StrView> _strvVecBuf;
-	std::vector<uint> _intVecBuf;
+	std::string _strBuf;			  // single buffer for all strviews
+	std::vector<StrView> _strvVecBuf; // single buffer for all spans
 
 	// Server Components
-	Location _serverDefaults;
+	Location _defaults;
 	std::vector<Listen> _listen;
 	std::vector<Location> _locations;
 
@@ -39,7 +38,6 @@ private:
 	Server(const Server &other);
 
 	// Pivate Methods
-	void reserve(uint sizeStrBuf, uint sizeStrvVecBuf, uint sizeintVecBuf);
 	std::string formatIP(in_addr_t addr) const;
 	void printBufferSizes(std::ostream &stream) const;
 
@@ -56,7 +54,6 @@ public:
 	// Resolution (inheritable fields walk up to 3 tiers; pass found loc or
 	// NULL).
 	uchar resolveMethods(const Location *loc) const;
-	bool isAllowedMethod(uchar method, const Location *loc) const;
 	const char *resolveRoot(const Location *loc) const;
 	const Span<StrView> &resolveIndex(const Location *loc) const;
 	bool resolveAutoindex(const Location *loc) const;
@@ -64,9 +61,8 @@ public:
 	const char *resolveErrorFile(const Location *loc, uint code) const;
 
 	// Listen accessors
+	const std::vector<Listen> &getListen() const;
 	size_t getListenLen() const;
-	const Listen &getListen(size_t i) const;
-
 	void getServerStr(std::ostream &stream) const;
 };
 

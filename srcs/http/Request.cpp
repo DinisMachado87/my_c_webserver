@@ -22,15 +22,13 @@ Request::~Request() {}
 uchar Request::getMethod() const { return _requestLine.getMethod(); };
 const StrView &Request::getPath() const { return _requestLine.getPath(); };
 
+const StrView *Request::getHeaderValue(const char *key) const {
+	StrView strv = key;
+	return _headers.find(strv);
+};
 const StrView *Request::getHeaderValue(StrView &key) const {
 	return _headers.find(key);
 };
-
-const StrView *Request::getHeaderValue(const char *charKey) const {
-	string key = charKey;
-	StrView strViewKey = StrView(key, 0, key.length());
-	return (getHeaderValue(strViewKey));
-}
 
 void Request::print(std::ostream &stream) const {
 	stream << _requestLine;

@@ -5,8 +5,7 @@
 #include <string>
 #include <vector>
 
-class StrView
-{
+class StrView {
 	const char *_data;
 	size_t _size;
 
@@ -38,6 +37,10 @@ public:
 	std::string getStr() const; // allocates; avoid
 
 	// Methods
+	void replace(const std::string &src);
+	void replace(size_t offset, const StrView &src, size_t len);
+	void replace(const StrView &src, size_t len);
+	void replace(const StrView &src);
 	void consolidate(char *dest);
 	void printBuffer() const;
 	void setStart(const char *str);
@@ -56,8 +59,7 @@ public:
 	void intoStream(std::ostream &os) const;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const StrView &sv)
-{
+inline std::ostream &operator<<(std::ostream &os, const StrView &sv) {
 	sv.intoStream(os);
 	return os;
 }

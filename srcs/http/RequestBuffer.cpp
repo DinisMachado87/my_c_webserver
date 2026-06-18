@@ -29,24 +29,24 @@ string &RequestBuffer::getBuffRef() { return _buff; }
 char *RequestBuffer::getParsingPtr() { return &_buff[_parsingOffset]; }
 
 bool RequestBuffer::recvAppend(uint fd) {
+	size_t offset = _buff.size();
+
 	char cStrBuffer[RECV_SIZE + 1];
 	ssize_t bytesRead = recv(fd, cStrBuffer, RECV_SIZE, 0);
 
 	if (bytesRead <= ERR) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return false;
-		else
-			throw(runtime_error(TRACED("recv() failure reading from client")
-								+ string(strerror(errno))));
+
+		char msg[] = "recv() failure reading from client";
+		throw(runtime_error(TRACED(msg) + string(strerror(errno))));
 	}
 	if (bytesRead == 0)
 		throw ClientClosed();
 
 	cStrBuffer[bytesRead] = '\0';
 	_buff.append(cStrBuffer);
-
-	size_t newOffset = _curRead.getOffset() + _curRead.size();
-	_curRead = StrView(_buff, newOffset, bytesRead);
+	_curRead = StrView(_buff.c_str() + offset, bytesRead);
 
 	LOG_OBJ("_curRead: ", _curRead);
 	LOG_LABELED(Logger::CONTENT, "RECV buffer: ", _buff.c_str());

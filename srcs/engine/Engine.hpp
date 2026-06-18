@@ -22,10 +22,8 @@ protected:
 	std::vector<Server *> _servers;
 	std::map<int, ASocket *> _sockets;
 
-	std::string _defaultsBuffer;
 	std::vector<StrView> _defaultsVecBuf;
 	// Methods
-	void loadProgramDefaults();
 	void logFlagUpdates(ASocket *socket, uint32_t events, uint32_t newEvents);
 	std::runtime_error handleError(const std::string errMsg, const int err);
 	void deleteSocket(ASocket *socket);

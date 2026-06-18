@@ -17,11 +17,9 @@ protected:
 
 	StrView _strV;
 	uchar _type;
-	bool _pendingQuote;
 	bool _needsMoreInput;
 
 	size_t _strVBuffSize;
-	std::vector<StrView *> _tokensInUse;
 	size_t _vecBuffConsolidationIndex;
 
 	friend class ConfParser;
@@ -59,13 +57,8 @@ public:
 	// Methods
 	const char *findEndQuote(const char *str) const;
 	void addToStrBuffSize();
-	void resetConsolidationCounters();
-	size_t getStrVBuffsize();
 	void resetNeedsMoreInputFlag();
 	bool needsMoreInput();
-	void printBuffer();
-	void printBuffers(std::stringstream &stream);
-	void resetSpanConsolidationIndex();
 	void loadNextChunk(const size_t size);
 	bool loadNextHex(size_t *ret);
 	void loadDigitsUntil(const char c);
@@ -90,7 +83,6 @@ public:
 	const char *getStart() const;
 	uchar getType() const;
 	StrView getStrV() const;
-	int getLineN() const;
 	std::string getString() const;
 	size_t getStrBuffSize() const;
 };

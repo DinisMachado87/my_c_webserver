@@ -1,6 +1,7 @@
 #include "StrView.hpp"
 #include "Logger.hpp"
 #include <climits>
+#include <cstddef>
 #include <cstring>
 #include <string>
 #include <unistd.h>
@@ -93,8 +94,6 @@ void StrView::removeSuffix(size_t n) {
 
 // Methods
 bool StrView::compare(const StrView &other) const {
-	if (_size != other._size)
-		return false;
 	return compare(other, _size);
 }
 
@@ -167,4 +166,17 @@ void StrView::intoStream(std::ostream &os) const {
 void StrView::consolidate(char *dest) {
 	memcpy(dest, _data, _size);
 	_data = dest;
+}
+
+void StrView::replace(const string &src) { replace(0, src, src.size()); }
+void StrView::replace(const StrView &src) { replace(0, src, src.size()); }
+void StrView::replace(const StrView &src, size_t len) { replace(0, src, len); }
+void StrView::replace(size_t offset, const StrView &src, size_t len) {
+	if (offset >= _size)
+		return;
+
+	size_t avail = _size - offset;
+	if (len > avail)
+		len = avail;
+	memcpy(const_cast<char *>(_data) + offset, src.data(), len);
 }

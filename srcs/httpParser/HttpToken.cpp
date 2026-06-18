@@ -9,7 +9,7 @@ using std::string;
 
 // Public constructors and destructors
 HttpToken::HttpToken(std::string &parsingString) :
-	Token(configDelimiters(), parsingString) {}
+	Token(configDelimiters(), parsingString.c_str(), parsingString.size()) {}
 
 HttpToken::~HttpToken() {}
 
@@ -26,19 +26,19 @@ const uchar *HttpToken::configDelimiters() {
 
 // uchar HttpToken::loadHttpNewLine() {
 // 	_strV.updateOffset(_strV.getLen());
-// 	_strV.setLen(0);
+// 	_strV.setSize(0);
 //
 // 	size_t sizeLeft = getSizeLeft();
 // 	if (sizeLeft < 2)
 // 		return OTHER;
 //
 // 	if (_strV.compare("\r\n")) {
-// 		_strV.setLen(2);
+// 		_strV.setSize(2);
 // 		return NEWLINE;
 // 	} else if (sizeLeft < 2)
 // 		return OTHER;
 // 	else if (_strV.compare("\0\r\n")) {
-// 		_strV.setLen(3);
+// 		_strV.setSize(3);
 // 		return ENDOFILE;
 // 	}
 // 	throw parsingErr("End of line or request");
@@ -86,7 +86,7 @@ void HttpToken::loadNextHex(size_t *ret) {
 	if (end == start)
 		throw parsingErr("Expected number");
 
-	_strV.setLen(len);
+	_strV.setSize(len);
 
 	// if (!loadHttpNewLine() || NEWLINE != getType())
 	// 	throw parsingErr("Newline");

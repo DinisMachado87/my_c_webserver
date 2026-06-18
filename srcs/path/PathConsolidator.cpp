@@ -31,8 +31,8 @@ Path PathConsolidator::consolidate(const StrView &pathStr) {
 }
 
 bool PathConsolidator::isSingleSlash() {
-	if (_path.size() == 2 && _path.ncompare("/.", 2))
-		_path.setLen(1);
+	if (_path.size() == 2 && _path.compare("/.", 2))
+		_path.setSize(1);
 	if (_path.size() <= 1)
 		return true;
 	return false;
@@ -47,13 +47,10 @@ void PathConsolidator::split() {
 		if (nextDivider > UINT_MAX)
 			throw runtime_error(TRACED("uint overflow"));
 
-		const bool onlySlash = ((cur.size() == 1 && cur.ncompare("/", 1))
-								|| (cur.size() == 2 && cur.ncompare("/.", 2)));
-
-		if (onlySlash) {
+		if (cur.compare("/") || cur.compare("/.")) {
 			const bool isLastSegment = _path.size() - 1 == nextDivider;
 			if (isLastSegment) {
-				cur.setLen(1); // if '/.' truncates to '/'
+				cur.setSize(1); // if '/.' truncates to '/'
 				_segments.push_back(cur);
 				return;
 			}
@@ -68,37 +65,29 @@ void PathConsolidator::split() {
 }
 
 void PathConsolidator::normalize() {
-	DEBUG(size_t deletedSegs = 0);
 	for (size_t i = 0; i < _segments.size(); i++) {
-		DEBUG(cout << "\nbefore: ");
-		DEBUG(printSegments(i, _writeIdx, deletedSegs));
 		StrView seg = _segments[i];
 		bool isLastSegment = (i == _segments.size() - 1);
-		if (isLastSegment && seg.size() == 2 && seg.ncompare("/.", 2)) {
-			DEBUG(cout << "SKIP\n");
-		} else if (seg.size() == 3 && seg.ncompare("/..", 3)) {
-			if (_writeIdx == 0)
-				throw runtime_error("Path contains negative level");
-			_writeIdx--;
-			DEBUG(deletedSegs++);
-			DEBUG(cout << "GO BACK\n");
-		} else {
-			if (_writeIdx != i)
-				_segments[_writeIdx].setStartAndLen(_segments[i].data(),
-													_segments[i].size());
-			_writeIdx++;
-			DEBUG(cout << "NORMAL\n");
+		bool isLastEmpty = isLastSegment && seg.compare("/.");
+		if (!isLastEmpty) {
+			if (seg.size() == 3 && seg.compare("/..")) {
+				if (_writeIdx == 0)
+					throw runtime_error("Path contains negative level");
+				_writeIdx--;
+			} else {
+				if (_writeIdx != i)
+					_segments[_writeIdx] = _segments[i];
+				_writeIdx++;
+			}
 		}
 		if (_writeIdx != i)
 			_hasChanges = true;
-		DEBUG(cout << "after: ");
-		DEBUG(printSegments(i, _writeIdx, deletedSegs));
 	}
 }
 
 void PathConsolidator::rebuild() {
 	if (_writeIdx == 0) {
-		_path.setLen(1);
+		_path.setSize(1);
 		return;
 	}
 	string newPathStr;
@@ -106,9 +95,8 @@ void PathConsolidator::rebuild() {
 	for (size_t i = 0; i < _writeIdx; i++)
 		newPathStr.append(_segments[i].data(), _segments[i].size());
 	DEBUG(cout << "\nCOPYING:\n" << newPathStr << " | temp str\n");
-	_path.nreplace(0, StrView(newPathStr, 0, newPathStr.size()),
-				   newPathStr.size());
-	_path.setLen(newPathStr.size());
+	_path.replace(newPathStr);
+	_path.setSize(newPathStr.size());
 }
 
 void PathConsolidator::printSegments(size_t i, size_t writeIdx,
