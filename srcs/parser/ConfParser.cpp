@@ -61,11 +61,8 @@ ConfParser::~ConfParser() {}
 
 // Main controlflow
 void ConfParser::createServers() {
-	_token.loadNext();
-
-	while (_token._type == Token::WORD && _token.compare("server"))
+	while (Token::WORD == _token.loadNext() && _token.compare("server"))
 		nextServer();
-
 	if (_token._type != Token::ENDOFILE)
 		throw parsingErr("\"server\"");
 	LOG(Logger::LOG, "Done Parsing");
@@ -82,11 +79,8 @@ void ConfParser::nextServer() {
 				parseServerLine();
 			continue;
 		case Token::CLOSEBLOCK:
-			consolidateBuffer();
-			inheritUnsetParameters();
-			_servers.push_back(_newServer);
+			consolidateAndStoreNewServer();
 			_newServer = new Server();
-			_vecCursor = 0;
 			return;
 		default:
 			throw parsingErr("Unexpected token");
@@ -108,17 +102,13 @@ void ConfParser::parseLocation() {
 	while (1) {
 		_token.loadNext();
 		switch (_token.getType()) {
-		case Token::CLOSEBLOCK:
-			if (_newLocation._cgiExtensions.len()
-				!= _newLocation._cgiPath.len())
-				throw runtime_error("Error parsing location: diferent number "
-									"of cgi extentions and paths");
-			_newServer->_locations.push_back(_newLocation);
-			_newLocation = Location(_newServer->_strvVecBuf);
-			return;
 		case Token::WORD:
 			parseLocationline();
 			continue;
+		case Token::CLOSEBLOCK:
+			_newServer->_locations.push_back(_newLocation);
+			_newLocation = Location(_newServer->_strvVecBuf);
+			return;
 		case Token::ENDOFILE:
 			throw parsingErr("}");
 		}
@@ -157,6 +147,8 @@ void ConfParser::parseLocationline() {
 }
 
 bool ConfParser::parseOverrides(Overrides &ov) {
+	const bool isOverridesParam = true;
+
 	if (_token.compare("root")) {
 		_expect.path(&ov._root);
 		ov._set |= 1 << F_ROOT;
@@ -175,12 +167,12 @@ bool ConfParser::parseOverrides(Overrides &ov) {
 		ov._set |= 1 << F_ERROR;
 	} else if (_token.compare("allowed_methods")) {
 		parseMethod(ov);
-		return true;
+		return isOverridesParam;
 	} else
-		return false;
+		return !isOverridesParam;
 
 	_token.loadNextOfType(Token::SEMICOLON, "';'");
-	return true;
+	return isOverridesParam;
 }
 
 // Parse elements
@@ -254,45 +246,44 @@ void ConfParser::consolidatelocation(Location &loc, char *&dest) {
 	consolidateMap(loc._overrides._error, dest);
 }
 
-void ConfParser::consolidateBuffer() {
+void ConfParser::consolidateAndStoreNewServer() {
+	// instantiate temporary program defaults
+	uchar progDefSet = (1 << F_ROOT) | (1 << F_INDEX) | (1 << F_AUTOINDEX)
+					   | (1 << F_CLIENT_BODY) | (1 << F_METHODS);
+	Overrides programDefaults = Overrides(_defaultsVecBuff, progDefSet);
+	// reserve and get new consolidation buffer pointer
 	size_t size = _token.getStrBuffSize();
-	string &newBuff = _newServer->_strBuf;
-	newBuff.resize(size);
-	char *dest = &newBuff[0];
+	_newServer->_strBuf.resize(size);
+	char *dest = &_newServer->_strBuf[0];
 
-	// consolidate the buffer of all spans;
+	// consolidate vector buffer of all spans
 	vector<StrView> &tokensVec = _newServer->_strvVecBuf;
 	for (size_t i = 0; i < tokensVec.size(); i++)
 		consolidateStrv(tokensVec[i], dest);
 
-	// consolidate locations
+	// server inherit from program
+	Overrides &serverOverrides = _newServer->_defaults._overrides;
 	consolidatelocation(_newServer->_defaults, dest);
+	serverOverrides.inheritUnsetParams(programDefaults);
 
+	// locations inherit from server
 	vector<Location> &locations = _newServer->_locations;
-	for (size_t i = 0; i < locations.size(); i++)
+	for (size_t i = 0; i < locations.size(); i++) {
+		Overrides &locOverrides = locations[i]._overrides;
 		consolidatelocation(locations[i], dest);
+		locOverrides.inheritUnsetParams(serverOverrides);
 
-	_token._strVBuffSize = 0;
-	_token._vecBuffConsolidationIndex = 0;
-}
-
-void ConfParser::inheritUnsetParameters() {
-	// flag to call program defaults constructor of Overrides
-	uchar progDefSet = (1 << F_ROOT) | (1 << F_INDEX) | (1 << F_AUTOINDEX)
-					   | (1 << F_CLIENT_BODY) | (1 << F_METHODS);
-
-	Overrides programDefaults = Overrides(_defaultsVecBuff, progDefSet);
-	// _serverDefaults inherit unset params from _programDefaults
-	Overrides &serverDefaults = _newServer->_defaults._overrides;
-	serverDefaults.mergeFrom(programDefaults);
-	// Locations inherit unset params from _serverDefaults
-	for (size_t i = 0; i < _newServer->_locations.size(); ++i) {
-		Overrides &locParams = _newServer->_locations[i]._overrides;
-		locParams.mergeFrom(serverDefaults);
+		if (locations[i]._cgiExtensions.len() != locations[i]._cgiPath.len())
+			throw runtime_error("Error parsing location: diferent number "
+								"of cgi extentions and paths");
 	}
-	// server validation
+
 	if (_newServer->_defaults._overrides._root == "")
 		throw runtime_error("Cannot init server. No root defined.");
+
+	_servers.push_back(_newServer);
+	_token._strVBuffSize = 0;
+	_vecCursor = 0;
 }
 
 // Err Handeling

@@ -38,7 +38,7 @@ public:
 	Overrides(std::vector<StrView> &vecBuf);
 
 	// Methods
-	void mergeFrom(const Overrides &parent);
+	void inheritUnsetParams(const Overrides &parent);
 	// Getters
 	bool isAutoindexed() const;
 	const Span<StrView> &getIndex() const;

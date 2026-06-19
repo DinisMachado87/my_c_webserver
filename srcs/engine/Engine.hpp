@@ -2,6 +2,7 @@
 #define ENGINE_HPP
 
 #include "ASocket.hpp"
+#include "BufferManager.hpp"
 #include "Server.hpp"
 #include "webServ.hpp"
 #include <map>
@@ -21,8 +22,10 @@ protected:
 	int _fdEpoll;
 	std::vector<Server *> _servers;
 	std::map<int, ASocket *> _sockets;
+	BufferManager _bufferManager;
 
 	std::vector<StrView> _defaultsVecBuf;
+
 	// Methods
 	void logFlagUpdates(ASocket *socket, uint32_t events, uint32_t newEvents);
 	std::runtime_error handleError(const std::string errMsg, const int err);

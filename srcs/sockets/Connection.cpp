@@ -22,9 +22,10 @@ using std::string;
 
 // Public constructors and destructors
 Connection::Connection(const int fd, const Server &server,
-					   struct sockaddr_in serverAddr) :
-	ASocket(fd, server, serverAddr),
-	_http(server, fd),
+					   struct sockaddr_in serverAddr,
+					   BufferManager &bufferManager) :
+	ASocket(fd, server, serverAddr, bufferManager),
+	_http(server, fd, _bufferManager),
 	_responseReceivingBody(NULL),
 	_cur(0),
 	_back(0),

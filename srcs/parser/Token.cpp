@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -23,8 +22,7 @@ Token::Token(const uchar *table, const char *parsingString, size_t size) :
 	_parsingStr(StrView(parsingString, size)),
 	_strV(StrView(parsingString, size)),
 	_needsMoreInput(false),
-	_strVBuffSize(0),
-	_vecBuffConsolidationIndex(0) {}
+	_strVBuffSize(0) {}
 
 Token::~Token() {}
 
@@ -82,7 +80,7 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 		switch (_type) {
 		case ENDOFILE:
 			_needsMoreInput = true;
-			_parsingStr.setStart(cur); // keep cursor consistent
+			_parsingStr.setStart(cur);
 			_parsingStr.setSize(0);
 			return ENDOFILE;
 
@@ -193,3 +191,7 @@ size_t Token::getStrBuffSize() const { return _strVBuffSize; }
 void Token::addToStrBuffSize() { _strVBuffSize += _strV.size(); }
 bool Token::needsMoreInput() { return _needsMoreInput; }
 void Token::resetNeedsMoreInputFlag() { _needsMoreInput = false; }
+
+void Token::loadParsingString(StrView parsingString) {
+	_parsingStr = parsingString;
+}

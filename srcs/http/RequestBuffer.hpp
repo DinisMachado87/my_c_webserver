@@ -1,20 +1,22 @@
 #ifndef REQUESTBUFFER_HPP
 #define REQUESTBUFFER_HPP
 
+#include "BufferManager.hpp"
 #include "StrView.hpp"
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 
 class RequestBuffer {
 private:
-	std::string _buff;
+	BufferManager &_bufferManager;
+	std::vector<StrView> _buffers;
 	const int _fd;
 
-	size_t _recvOffset;
-	size_t _parsingOffset;
-
-	StrView _curRead;
+	StrView _lastRead;
+	StrView _freeSpace;
+	StrView _leftover;
 
 	// Explicit disables
 	RequestBuffer();
@@ -24,7 +26,7 @@ private:
 protected:
 	friend class Request;
 	friend class HttpParser;
-	RequestBuffer(int fd);
+	RequestBuffer(int fd, BufferManager &bufferManager);
 	std::string &getBuffRef();
 
 public:
@@ -35,8 +37,8 @@ public:
 	char *getCur();
 
 	// Methods
-	bool recvAppend(uint fd);
-	char *getParsingPtr();
+	StrView recvAppend();
+	StrView getlastRead();
 };
 
 #endif

@@ -7,20 +7,18 @@
 #include <stdexcept>
 #include <string>
 #include <sys/types.h>
-#include <vector>
 
 class Token {
 protected:
 	const uchar *const _isDelimiter;
 
 	StrView _parsingStr;
-
 	StrView _strV;
+
 	uchar _type;
 	bool _needsMoreInput;
 
 	size_t _strVBuffSize;
-	size_t _vecBuffConsolidationIndex;
 
 	friend class ConfParser;
 
@@ -55,6 +53,7 @@ public:
 	static const uchar *configDelimiters();
 
 	// Methods
+	void loadParsingString(StrView parsingString);
 	const char *findEndQuote(const char *str) const;
 	void addToStrBuffSize();
 	void resetNeedsMoreInputFlag();
@@ -72,7 +71,6 @@ public:
 	uchar loadNextOfTypes(uchar *types, uint nTypes, const char *errStr);
 	uchar loadNextOfType(uchar type, const char *errStr);
 	std::runtime_error parsingErr(const char *expected) const;
-	void LoadParsingString(char *parsingString);
 	char compare(const char **strArr, uchar len);
 	bool compare(StrView &strV) const;
 	bool compare(const char *str) const;

@@ -1,6 +1,7 @@
 #ifndef HTTPTOKEN_HPP
 #define HTTPTOKEN_HPP
 
+#include "StrView.hpp"
 #include "Token.hpp"
 
 class HttpToken : public Token {
@@ -11,7 +12,8 @@ private:
 public:
 	enum e_httpLine { SINGLE, DOUBLE };
 	// Constructors and destructors
-	HttpToken(std::string &parsingString);
+	HttpToken(StrView parsingString); // not by ref request buffer needs an
+									  // unchanged copy
 	~HttpToken();
 	// Operators overload
 	HttpToken &operator=(const HttpToken &other);
@@ -20,7 +22,7 @@ public:
 	void loadNextHex(size_t *ret);
 	StrView getBody(size_t bodySize);
 	uchar handleNewline();
-	static const uchar *configDelimiters();
+	static const uchar *httpDelimiters();
 };
 
 #endif

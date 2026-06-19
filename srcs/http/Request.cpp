@@ -1,5 +1,5 @@
 #include "Request.hpp"
-#include "StrView.hpp"
+#include "BufferManager.hpp"
 #include "webServ.hpp"
 #include <cstring>
 #include <iostream>
@@ -12,8 +12,8 @@ using std::string;
 using std::stringstream;
 
 // Public constructors and destructors
-Request::Request(int fd) :
-	_buff(fd) {}
+Request::Request(int fd, BufferManager &bufferManager) :
+	_buff(fd, bufferManager) {}
 
 Request::~Request() {}
 

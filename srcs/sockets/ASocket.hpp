@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BufferManager.hpp"
 #include "HttpParser.hpp"
 #include <netinet/in.h>
 #include <stdexcept>
@@ -25,8 +26,10 @@ protected:
 	HttpParser _parser;
 	Request *_request;
 	uint32_t _events;
+	BufferManager &_bufferManager;
 	// Constructors and destructors
-	ASocket(const int fd, const Server &server, struct sockaddr_in serverAddr);
+	ASocket(const int fd, const Server &server, struct sockaddr_in serverAddr,
+			BufferManager &bufferManager);
 	// Error Handeling
 	static std::runtime_error handleError(const std::string errMsg);
 

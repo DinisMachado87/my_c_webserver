@@ -1,6 +1,7 @@
 #include "HttpToken.hpp"
 #include "StrView.hpp"
 #include "Token.hpp"
+#include "webServ.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstdlib>
@@ -8,13 +9,13 @@
 using std::string;
 
 // Public constructors and destructors
-HttpToken::HttpToken(std::string &parsingString) :
-	Token(configDelimiters(), parsingString.c_str(), parsingString.size()) {}
+HttpToken::HttpToken(StrView parsingString) :
+	Token(httpDelimiters(), parsingString.data(), parsingString.size()) {}
 
 HttpToken::~HttpToken() {}
 
 // Public Methods
-const uchar *HttpToken::configDelimiters() {
+const uchar *HttpToken::httpDelimiters() {
 	static uchar isDelimiter[256] = {0};
 	isDelimiter[' '] = Token::SPACE;
 	isDelimiter['\t'] = Token::SPACE;
@@ -24,36 +25,33 @@ const uchar *HttpToken::configDelimiters() {
 	return isDelimiter;
 }
 
-// uchar HttpToken::loadHttpNewLine() {
-// 	_strV.updateOffset(_strV.getLen());
-// 	_strV.setSize(0);
-//
-// 	size_t sizeLeft = getSizeLeft();
-// 	if (sizeLeft < 2)
-// 		return OTHER;
-//
-// 	if (_strV.compare("\r\n")) {
-// 		_strV.setSize(2);
-// 		return NEWLINE;
-// 	} else if (sizeLeft < 2)
-// 		return OTHER;
-// 	else if (_strV.compare("\0\r\n")) {
-// 		_strV.setSize(3);
-// 		return ENDOFILE;
-// 	}
-// 	throw parsingErr("End of line or request");
-// }
-
 uchar HttpToken::handleNewline() {
-	loadNextOfType(NEWLINE, "NEWLINE");
+	uint size = _parsingStr.size();
+	uint equalLen = (size >= 4) ? 4 : size;
 
-	if (compare("\r\n\r\n"))
+	uint i = 0;
+	while (i < equalLen && _parsingStr.data()[i] == "\r\n\r\n"[i])
+		i++;
+	equalLen = i;
+
+	if (equalLen == 4) {
+		_strV = StrView(_parsingStr.data(), 4);
+		_type = NEWLINE;
 		return DOUBLE;
-	else if (compare("\r\n"))
+	}
+	// case "\r\n\r\0" | "\r\n\0" | "\r\0"
+	if (equalLen == size) {
+		_needsMoreInput = true;
+		return OTHER;
+	}
+	// case "\r\nFollowedByOtherCharacters"
+	if (equalLen >= 2) {
+		_strV = StrView(_parsingStr.data(), 2);
+		_type = NEWLINE;
 		return SINGLE;
-	if (_needsMoreInput)
-		return ENDOFILE;
-	throw parsingErr("NEWLINE");
+	}
+	// not a new line
+	throw parsingErr("End of line or request");
 }
 
 StrView HttpToken::getBody(size_t bodySize) {

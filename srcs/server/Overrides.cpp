@@ -58,7 +58,7 @@ uchar Overrides::isAllowedMethod(uchar methodToCheck) const {
 	return _allowedMethods & (1 << methodToCheck);
 }
 
-void Overrides::mergeFrom(const Overrides &parent) {
+void Overrides::inheritUnsetParams(const Overrides &parent) {
 	if (!(_set & (1 << F_ROOT)) && (parent._set & (1 << F_ROOT)))
 		_root = parent._root;
 	if (!(_set & (1 << F_INDEX)) && (parent._set & (1 << F_INDEX)))
@@ -90,7 +90,7 @@ void Overrides::printMap(const char *label, ostream &stream) const {
 		return;
 	}
 	for (; cur != end; ++cur)
-		stream << cur->first << ": " << cur->second.data() << '\n';
+		stream << cur->first << ": " << cur->second << '\n';
 }
 
 void Overrides::printMethods(ostream &stream) const {

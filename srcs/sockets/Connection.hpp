@@ -20,12 +20,11 @@ private:
 	uchar _handleInState;
 
 	// Explicit disables
-	Connection(const int fd, const Server &server,
-			   struct sockaddr_in serverAddr);
 	Connection(const Connection &other);
 	Connection &operator=(const Connection &other);
-	// Methods
-	// Friends
+	// Constructor for friend Listening
+	Connection(const int fd, const Server &server,
+			   struct sockaddr_in serverAddr, BufferManager &bufferManager);
 	friend class Listening;
 
 public:

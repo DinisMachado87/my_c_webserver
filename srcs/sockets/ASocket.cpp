@@ -1,4 +1,5 @@
 #include "ASocket.hpp"
+#include "BufferManager.hpp"
 #include "Logger.hpp"
 #include "webServ.hpp"
 #include <cerrno>
@@ -13,12 +14,13 @@ using std::string;
 
 // Public constructors and destructors
 ASocket::ASocket(const int fd, const Server &server,
-				 struct sockaddr_in serverAddr) :
+				 struct sockaddr_in serverAddr, BufferManager &bufferManager) :
 	_fd(fd),
 	_server(server),
 	_serverAddr(serverAddr),
-	_parser(server, fd),
-	_events(0) {}
+	_parser(server, fd, bufferManager),
+	_events(0),
+	_bufferManager(bufferManager) {}
 
 ASocket::~ASocket() {
 	if (_fd >= 0)

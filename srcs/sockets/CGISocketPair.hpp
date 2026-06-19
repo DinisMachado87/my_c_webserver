@@ -1,3 +1,4 @@
+#include "BufferManager.hpp"
 #include "CGISocketPair.hpp"
 #include "Logger.hpp"
 #include "Response.hpp"
@@ -8,9 +9,9 @@ using std::runtime_error;
 
 // Public constructors and destructors
 CGISocketPair::CGISocketPair(const int fd, const Server &server,
-							 struct sockaddr_in serverAddr,
-							 Response &response) :
-	ASocket(fd, server, serverAddr),
+							 struct sockaddr_in serverAddr, Response &response,
+							 BufferManager &bufferManager) :
+	ASocket(fd, server, serverAddr, bufferManager),
 	_response(response),
 	_inOpen(true),
 	_outOpen(true) {}

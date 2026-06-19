@@ -22,8 +22,8 @@
 class Listening : public ASocket {
 private:
 	// Constructor
-	Listening(const int fd, const Server &server,
-			  struct sockaddr_in serverAddr);
+	Listening(const int fd, const Server &server, struct sockaddr_in serverAddr,
+			  BufferManager &bufferManager);
 	// Explicit Disables
 	Listening();
 	Listening(const Listening &other);
@@ -37,7 +37,8 @@ public:
 	~Listening();
 	// Methods
 	Connection *handleIn();
-	static Listening *create(const Server &server, const Listen &listenSock);
+	static Listening *create(const Server &server, const Listen &listenSock,
+							 BufferManager &bufferManager);
 };
 
 #endif

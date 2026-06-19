@@ -30,17 +30,18 @@ private:
 	ConfParser(const ConfParser &other);
 
 	// Methods
+	void parseListen();
 	bool isMethod();
 	bool parseOverrides(Overrides &overrides);
 	uchar parseServer();
 	void nextServer();
 	void parseServerLine();
 	void parseLocation();
-	void parseLocationParam();
+	void parseLocationline();
 	void parseMethod(Overrides &overrides);
 
 	// Consolidation Methods
-	void inheritUnsetParameters();
+	void consolidateAndStoreNewServer();
 	void consolidatelocation(Location &loc, char *&dest);
 	void consolidateBuffer();
 

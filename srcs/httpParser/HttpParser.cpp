@@ -1,4 +1,5 @@
 #include "HttpParser.hpp"
+#include "BufferManager.hpp"
 #include "HttpError.hpp"
 #include "HttpStates.hpp"
 #include "HttpToken.hpp"
@@ -25,10 +26,14 @@ const char *const HttpParser::bodyLabels[STATE_SIZE]
 	   "MAKE_ERROR_RESPONSE", "RETURN"};
 
 // Public constructors and destructors
-HttpParser::HttpParser(const Server &server, int fd) :
+HttpParser::HttpParser(const Server &server, int fd,
+					   BufferManager &bufferManager) :
 	_server(server),
 	_fd(fd),
-	_request(new Request(fd)),
+	_bufferManager(bufferManager),
+	_request(new Request(fd, bufferManager)),
+	_token(_request->_buff.getlastRead()),
+	_expect(_token),
 	_requestLineParser(_token, _expect, _request->_requestLine, _state),
 	_headersParser(&_request->_headers, _state, _token, _expect),
 	_charRead(0),
@@ -36,11 +41,55 @@ HttpParser::HttpParser(const Server &server, int fd) :
 	_state(REQUEST_LINE),
 	_nextBodySection(0),
 	_toGetChunk(false),
-	_token(_request->_buff.getBuffRef()),
-	_expect(_token),
 	_status(200) {}
 
 HttpParser::~HttpParser() { delete _request; }
+
+// Main control flow
+Request *HttpParser::recvAndParse() {
+	if (_request->_buff.recvAppend().empty())
+		return NULL;
+	_token.loadParsingString(_request->_buff.getlastRead());
+	_token.resetNeedsMoreInputFlag();
+	while (!_token.needsMoreInput()) {
+		switch (_state) {
+		case (REQUEST_LINE):
+			_requestLineParser.parse();
+			LOG_OBJ("Parsed request line:", _request->_requestLine);
+			continue;
+		case (VALIDATE_REQUEST_LINE):
+			validateRequestLine();
+		case (HEADERS):
+			_headersParser.parseHeaders(_state);
+			LOG_OBJ("Parsed Headers:", _request->_headers);
+			continue;
+		case (VALIDATE):
+			validateRequest();
+		case (SET_BODY_SIZE):
+			setBodySize();
+			LOGNUM_LABELED(Logger::LOG, "Body mode set to ", bodyLabels[_state],
+						   _state);
+			continue;
+		case (BODY):
+			_request->_body = _token.getRemaining();
+			_state = RETURN; // to change to next state
+			continue;
+		case (SET_CHUNK_SIZE):
+			// _needsMoreInput = _token.loadNextHex(&_nextBodySection);
+			continue;
+		case (CHUNKED_BODY):
+			getChunk();
+			continue;
+		case (MAKE_ERROR_RESPONSE):
+			return NULL;
+		case (RETURN):
+			Request *ret = _request;
+			_request = new Request(_fd, _bufferManager);
+			return ret;
+		}
+	}
+	return NULL;
+}
 
 // Public Methods
 void HttpParser::validateRequestLine() {
@@ -130,49 +179,4 @@ void HttpParser::getChunk() {
 	// case (Token::NEWLINE):
 	// 	_state = SET_BODY_SIZE;
 	// }
-}
-
-Request *HttpParser::recvAndParse() {
-	if (!_request->_buff.recvAppend(_fd))
-		return NULL;
-	_token.resetNeedsMoreInputFlag();
-
-	while (!_token.needsMoreInput()) {
-		switch (_state) {
-		case (REQUEST_LINE):
-			_requestLineParser.parse();
-			LOG_OBJ("Parsed request line:", _request->_requestLine);
-			continue;
-		case (VALIDATE_REQUEST_LINE):
-			validateRequestLine();
-		case (HEADERS):
-			_headersParser.parseHeaders(_state);
-			LOG_OBJ("Parsed Headers:", _request->_headers);
-			continue;
-		case (VALIDATE):
-			validateRequest();
-		case (SET_BODY_SIZE):
-			setBodySize();
-			LOGNUM_LABELED(Logger::LOG, "Body mode set to ", bodyLabels[_state],
-						   _state);
-			continue;
-		case (BODY):
-			_request->_body = _token.getRemaining();
-			_state = RETURN; // to change to next state
-			continue;
-		case (SET_CHUNK_SIZE):
-			// _needsMoreInput = _token.loadNextHex(&_nextBodySection);
-			continue;
-		case (CHUNKED_BODY):
-			getChunk();
-			continue;
-		case (MAKE_ERROR_RESPONSE):
-			return NULL;
-		case (RETURN):
-			Request *ret = _request;
-			_request = new Request(_fd);
-			return ret;
-		}
-	}
-	return NULL;
 }

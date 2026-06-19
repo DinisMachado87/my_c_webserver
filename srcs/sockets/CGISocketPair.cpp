@@ -2,6 +2,7 @@
 #define CGISOCKETPAIR_HPP
 
 #include "ASocket.hpp"
+#include "BufferManager.hpp"
 #include "webServ.hpp"
 
 class CGISocketPair : public ASocket {
@@ -20,7 +21,8 @@ protected:
 public:
 	// Constructors and destructors
 	CGISocketPair(const int fd, const Server &server,
-				  struct sockaddr_in serverAddr, Response &response);
+				  struct sockaddr_in serverAddr, Response &response,
+				  BufferManager &bufferManager);
 	~CGISocketPair();
 	// Operators overload
 	// I/O

@@ -23,7 +23,7 @@ protected:
 	friend class HttpParser;
 	friend class Expect;
 	// private constructor
-	Request(int fd);
+	Request(int fd, BufferManager &bufferManager);
 
 public:
 	// Constructors and destructors

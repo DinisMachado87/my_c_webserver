@@ -1,5 +1,6 @@
 #include "Listening.hpp"
 #include "ASocket.hpp"
+#include "BufferManager.hpp"
 #include "Connection.hpp"
 #include "Logger.hpp"
 #include "Server.hpp"
@@ -7,6 +8,7 @@
 #include <arpa/inet.h>
 #include <asm-generic/socket.h>
 #include <cerrno>
+#include <cstddef>
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -29,15 +31,17 @@ runtime_error Listening::handleFdError(const char *errMsg, const int fdSock) {
 
 // Public constructors and destructors
 Listening::Listening(const int fd, const Server &server,
-					 struct sockaddr_in serverAddr) :
-	ASocket(fd, server, serverAddr) {}
+					 struct sockaddr_in serverAddr,
+					 BufferManager &bufferManager) :
+	ASocket(fd, server, serverAddr, bufferManager) {}
 
 Listening::~Listening() {
 	LOGSOCK(Logger::LOG, "Destroying Listening Socket ", _fd);
 }
 
 // Public Methods
-Listening *Listening::create(const Server &server, const Listen &listenSock) {
+Listening *Listening::create(const Server &server, const Listen &listenSock,
+							 BufferManager &bufferManager) {
 	LOG_TITLE("CREATING SOCKET");
 	LOG_SERVER("", server);
 
@@ -51,14 +55,14 @@ Listening *Listening::create(const Server &server, const Listen &listenSock) {
 		throw handleFdError("Error creating listening socket: ", fdSock);
 
 	int enable = 1;
+	size_t size = sizeof(enable);
 	if (OK == setNonBlocking(fdSock)
-		&& OK
-			   == setsockopt(fdSock, SOL_SOCKET, SO_REUSEADDR, &enable,
-							 sizeof(enable)))
+		&& OK == setsockopt(fdSock, SOL_SOCKET, SO_REUSEADDR, &enable, size))
 		LOG(Logger::LOG, "Set Listening Socket options");
-	else
-		throw handleFdError(
-			"Error setting Listening socket non blocking/reuseaddr: ", fdSock);
+	else {
+		const char *msg = "Error setting Listening socket non blocking: ";
+		throw handleFdError(msg, fdSock);
+	}
 
 	if (OK == bind(fdSock, (struct sockaddr *)&addr, sizeof(addr)))
 		LOG(Logger::LOG, "Bind socket");
@@ -68,7 +72,7 @@ Listening *Listening::create(const Server &server, const Listen &listenSock) {
 	if (OK == listen(fdSock, SOMAXCONN)) {
 		LOGSOCKHOST(Logger::LOG, "Started listening on ", listenSock.getPort(),
 					listenSock.getHost(), fdSock);
-		return new Listening(fdSock, server, addr);
+		return new Listening(fdSock, server, addr, bufferManager);
 	} else
 		throw handleFdError("Error starting to listen with socket ", fdSock);
 }
@@ -89,5 +93,5 @@ Connection *Listening::handleIn() {
 	LOGSOCK(Logger::LOG, "Accepted connection on Listening socket", _fd);
 	LOGSOCK(Logger::LOG, "New connection socket ", clientFd);
 
-	return new Connection(clientFd, _server, clientAddr);
+	return new Connection(clientFd, _server, clientAddr, _bufferManager);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BufferManager.hpp"
 #include "Expect.hpp"
 #include "HttpHeadersParser.hpp"
 #include "HttpStates.hpp"
@@ -17,9 +18,14 @@
 class HttpParser {
 private:
 	const Server &_server;
+
 	int _fd;
+	BufferManager &_bufferManager;
 	Request *_request;
 	Response *_response;
+
+	HttpToken _token;
+	Expect _expect;
 
 	RequestLineParser _requestLineParser;
 	HttpHeadersParser _headersParser;
@@ -32,10 +38,6 @@ private:
 
 	std::vector<StrView> _chunks;
 	bool _toGetChunk;
-
-	HttpToken _token;
-	Expect _expect;
-	char _buff[BUFFER_SIZE];
 
 	uint _status;
 
@@ -65,7 +67,7 @@ private:
 
 public:
 	// Constructors and destructors
-	HttpParser(const Server &server, int fd);
+	HttpParser(const Server &server, int fd, BufferManager &bufferManager);
 	~HttpParser();
 	// Methods
 	Request *recvAndParse();

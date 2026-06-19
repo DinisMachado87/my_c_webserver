@@ -110,7 +110,8 @@ void Engine::createSockets() {
 		vector<Listen>::const_iterator port = listen.begin();
 
 		for (; port != listen.end(); ++port) {
-			Listening *socket = Listening::create(**server, *port);
+			Listening *socket
+				= Listening::create(**server, *port, _bufferManager);
 			addSocket(socket);
 		}
 	}
