@@ -1,5 +1,5 @@
 #include "StrView.hpp"
-#include "Logger.hpp"
+#include "webServ.hpp"
 #include <climits>
 #include <cstddef>
 #include <cstring>
@@ -146,12 +146,16 @@ vector<StrView> StrView::splitBefore(char c) const {
 	return result;
 }
 
-StrView StrView::lastSplitBefore(char c) const {
+StrView StrView::lastSplit(char c, bool trimPosition) const {
 	size_t offset = 0;
 	while (1) {
 		size_t next = find(c, offset);
-		if (next == string::npos)
+		if (next == string::npos) {
+			if (trimPosition == BEFORE && offset > 0)
+				offset--;
 			return StrView(_data + offset, _size - offset);
+		}
+
 		offset = next + 1;
 	}
 }

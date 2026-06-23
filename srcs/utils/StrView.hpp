@@ -1,5 +1,6 @@
 #pragma once
 
+#include "webServ.hpp"
 #include <cstring>
 #include <ostream>
 #include <string>
@@ -55,7 +56,7 @@ public:
 	size_t segmentUntil(char sep, size_t offset, StrView &out) const;
 
 	std::vector<StrView> splitBefore(char c) const;
-	StrView lastSplitBefore(char c) const;
+	StrView lastSplit(char c, bool splitPosition = AFTER) const;
 	void intoStream(std::ostream &os) const;
 };
 

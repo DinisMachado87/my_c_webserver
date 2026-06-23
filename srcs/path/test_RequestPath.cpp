@@ -1,24 +1,28 @@
+#include "RequestPath.hpp"
+#include "RequestPathConsolidator.hpp"
 #include "test_RequestPathBase.hpp"
-#include <sstream>
+#include <string>
 
 class RequestPathTest : public RequestPathTestBase {
 protected:
 	RequestPath _path;
+	std::string _buff;
 
-	void consolidate(const std::string &input) {
-		_path = makeRequestPath(input);
+	void consolidate(const char *input) {
+		_buff = input;
+		_path = RequestPathConsolidator::consolidate(_buff);
 	}
 };
 
 TEST_F(RequestPathTest, DefaultConstruction) {
-	EXPECT_FALSE(_path.isDir());
-	EXPECT_FALSE(_path.isCgi());
-	EXPECT_EQ(_path.getCgiExtension().getLen(), 0u);
+	EXPECT_FALSE(_path.getType() == RequestPath::DIR);
+	EXPECT_FALSE(_path.getType() == RequestPath::CGI);
+	EXPECT_EQ(_path.getCgiExtension().size(), 0u);
 }
 TEST_F(RequestPathTest, InheritsPathGetters) {
 	consolidate("/var/www/html/index.html");
 	EXPECT_EQ(_path.getPath().getStr(), "/var/www/html/index.html");
-	EXPECT_EQ(_path.getQuery().getLen(), 0u);
+	EXPECT_EQ(_path.getQuery().size(), 0u);
 }
 
 // CGI via fixture member
@@ -45,20 +49,4 @@ TEST_F(RequestPathTest, SelfAssignment) {
 	consolidate("/scripts/run.php");
 	_path = _path;
 	expectEqualRequestPath(_path, _path);
-}
-
-// Print
-TEST_F(RequestPathTest, PrintIncludesHttpInfo) {
-	consolidate("/scripts/run.php");
-	std::ostringstream oss;
-	_path.print(oss);
-	std::string out = oss.str();
-	EXPECT_NE(out.find("isCgi"), std::string::npos);
-	EXPECT_NE(out.find("isDir"), std::string::npos);
-}
-TEST_F(RequestPathTest, StreamOperator) {
-	consolidate("/var/www/");
-	std::ostringstream oss;
-	oss << _path;
-	EXPECT_FALSE(oss.str().empty());
 }

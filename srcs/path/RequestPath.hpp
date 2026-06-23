@@ -4,14 +4,16 @@
 #include "StrView.hpp"
 #include "webServ.hpp"
 
+#define TYPE_LIST                                              \
+	type(NONE) type(DIR) type(FILE) type(CGI) type(EXECUTABLE) \
+		type(CGI_W_INTERPRETER)
+
 class RequestPath : public Path {
 protected:
 	friend class RequestPathConsolidatorTest;
 	friend class RequestPathConsolidator;
 	friend class RequestLine;
 
-	RequestPath();
-	RequestPath(const StrView &pathStr);
 	RequestPath(const StrView &path, const StrView &query,
 				const StrView &fragment, const uchar type,
 				const StrView &dirPath, const StrView &sufix);
@@ -22,8 +24,17 @@ protected:
 	StrView _sufix;
 
 public:
-	enum pathType { NONE, DIR, FILE, CGI, EXECUTABLE, CGI_W_INTERPRETER, SIZE };
+	enum pathType {
+#define type(value) value,
+		TYPE_LIST
+#undef type
+			SIZE
+	};
+
 	static const char *typeLabels[SIZE];
+
+	RequestPath();
+	RequestPath(const StrView &pathStr);
 
 	uchar getType() const;
 	StrView const &getCgiExtension() const;

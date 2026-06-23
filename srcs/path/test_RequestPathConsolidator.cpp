@@ -1,3 +1,4 @@
+#include "RequestPathConsolidator.hpp"
 #include "test_RequestPathBase.hpp"
 
 class RequestPathConsolidatorTest : public RequestPathTestBase {};
@@ -33,13 +34,14 @@ TEST_F(RequestPathConsolidatorTest, NoTrailingSlashNotDir) {
 
 // Path consolidation correct
 TEST_F(RequestPathConsolidatorTest, PathConsolidatedCorrectly) {
-	RequestPath rp = makeRequestPath("/a/b/../c");
+	RequestPath rp = RequestPathConsolidator::consolidate("/a/b/../c");
 	EXPECT_EQ(rp.getPath().getStr(), "/a/c");
 }
 TEST_F(RequestPathConsolidatorTest, CgiPathConsolidatedCorrectly) {
-	RequestPath rp = makeRequestPath("/a/b/../scripts/run.php");
+	RequestPath rp
+		= RequestPathConsolidator::consolidate("/a/b/../scripts/run.php");
 	EXPECT_EQ(rp.getPath().getStr(), "/a/scripts/run.php");
-	EXPECT_TRUE(rp.isCgi());
+	EXPECT_TRUE(rp.getType() == RequestPath::CGI);
 }
 
 // Errors

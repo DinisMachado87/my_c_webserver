@@ -20,10 +20,14 @@ RequestPath::RequestPath(const StrView &path, const StrView &query,
 	_dirPath(dirPath),
 	_sufix(sufix) {}
 
-const char *RequestPath::typeLabels[SIZE]
-	= {"NONE", "DIR", "FILE", "EXECUTABLE", "CGI", "CGI_W_INTERPRETER"};
+const char *RequestPath::typeLabels[SIZE] = {
+#define type(valueStr) #valueStr,
+	TYPE_LIST
+#undef type
+};
 
 uchar RequestPath::getType() const { return _type; }
+
 const StrView &RequestPath::getCgiExtension() const { return _sufix; }
 
 void RequestPath::print(ostream &stream) const {
