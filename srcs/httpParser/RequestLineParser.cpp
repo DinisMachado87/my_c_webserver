@@ -10,7 +10,6 @@
 
 using std::runtime_error;
 
-// constructors and destructors
 RequestLineParser::RequestLineParser(HttpToken &token, Expect &expect,
 									 RequestLine &requestline,
 									 uchar &mainState) :
@@ -18,11 +17,14 @@ RequestLineParser::RequestLineParser(HttpToken &token, Expect &expect,
 	_expect(expect),
 	_requestLine(requestline),
 	_state(METHOD),
-	_mainState(mainState) {}
+	_mainState(mainState)
+{
+}
 
 RequestLineParser::~RequestLineParser() {}
 
-void RequestLineParser::parse() {
+void RequestLineParser::parse()
+{
 	try {
 		switch (_state) {
 		case METHOD:
@@ -49,7 +51,7 @@ void RequestLineParser::parse() {
 		case NEWLINE:
 			switch (_token.handleNewline()) {
 			case HttpToken::SINGLE:
-				_mainState = VALIDATE;
+				_mainState = HEADERS;
 				return;
 			case HttpToken::DOUBLE:
 				_mainState = RETURN;

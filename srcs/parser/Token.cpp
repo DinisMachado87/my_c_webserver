@@ -22,37 +22,26 @@ Token::Token(const uchar *table, const char *parsingString, size_t size) :
 	_parsingStr(StrView(parsingString, size)),
 	_strV(StrView(parsingString, size)),
 	_needsMoreInput(false),
-	_strVBuffSize(0) {}
+	_strVBuffSize(0)
+{
+}
 
 Token::~Token() {}
 
 // Error Handling
-std::runtime_error Token::parsingErr(const char *expected) const {
+std::runtime_error Token::parsingErr(const char *expected) const
+{
 	std::ostringstream oss;
 	oss << "Error Parsing config: "
 		<< "Expected \"" << expected << "\" "
-		<< "got \"" << getString() << "\" ";
+		<< "got \"" << getStr() << "\" ";
 
 	return std::runtime_error(oss.str());
 }
 
 // Public Methods
-const uchar *Token::configDelimiters() {
-	static uchar isDelimiter[256] = {0};
-	isDelimiter[(uchar)' '] = SPACE;
-	isDelimiter[(uchar)'\t'] = SPACE;
-	isDelimiter[(uchar)'\n'] = SPACE;
-	isDelimiter[(uchar)'#'] = COMMENT;
-	isDelimiter[(uchar)'"'] = QUOTE;
-	isDelimiter[(uchar)'{'] = OPENBLOCK;
-	isDelimiter[(uchar)'}'] = CLOSEBLOCK;
-	isDelimiter[(uchar)';'] = SEMICOLON;
-	isDelimiter[(uchar)'\\'] = EXCAPE;
-	isDelimiter[(uchar)'\0'] = ENDOFILE;
-	return isDelimiter;
-}
-
-const char *Token::findEndQuote(const char *str) const {
+const char *Token::findEndQuote(const char *str) const
+{
 	while (1) {
 		switch (_isDelimiter[(uchar)(*str)]) {
 		case ENDOFILE:
@@ -72,7 +61,8 @@ const char *Token::findEndQuote(const char *str) const {
 
 uchar Token::loadNext() { return loadNextCore(false); }
 uchar Token::loadNextStr() { return loadNextCore(true); }
-uchar Token::loadNextCore(const bool keepSpaces) {
+uchar Token::loadNextCore(const bool keepSpaces)
+{
 	const char *cur = _parsingStr.data();
 
 	while (1) {
@@ -125,21 +115,24 @@ uchar Token::loadNextCore(const bool keepSpaces) {
 	}
 }
 
-uchar Token::loadNextOfType(uchar type, const char *errStr) {
+uchar Token::loadNextOfType(uchar type, const char *errStr)
+{
 	loadNext();
 	if (type != _type)
 		throw parsingErr(errStr);
 	return _type;
 }
 
-uchar Token::loadNextStr(const char *errStr) {
+uchar Token::loadNextStr(const char *errStr)
+{
 	loadNextStr();
 	if (WORD != _type)
 		throw parsingErr(errStr);
 	return _type;
 }
 
-uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr) {
+uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr)
+{
 	loadNext();
 
 	while (nTypes--) {
@@ -150,7 +143,8 @@ uchar Token::loadNextOfTypes(uchar *types, uint nTypes, const char *errStr) {
 	throw parsingErr(errStr);
 }
 
-bool Token::compare(const char *str) const {
+bool Token::compare(const char *str) const
+{
 	const size_t charLen = strlen(str);
 	const size_t strVLen = _strV.size();
 	if (charLen != strVLen)
@@ -162,7 +156,8 @@ bool Token::compare(const char *str) const {
 
 bool Token::compare(StrView &strV) const { return _strV.compare(strV); };
 
-char Token::compare(const char **strArr, uchar len) {
+char Token::compare(const char **strArr, uchar len)
+{
 	for (uchar i = 0; i < len; i++)
 		if (OK == compare(strArr[i]))
 			return i;
@@ -175,23 +170,26 @@ const char *Token::getStart() const { return _strV.data(); }
 const char *Token::getEnd() const { return _strV.end(); }
 size_t Token::getSizeLeft() const { return (_strVBuffSize - _strV.size()); }
 
-StrView Token::getRemaining() {
+StrView Token::getRemaining()
+{
 	_strV.removePrefix(_strV.size());
 	_strV.setSize(getSizeLeft());
 	return _strV;
 }
 
-void Token::loadNextChunk(const size_t size) {
+void Token::loadNextChunk(const size_t size)
+{
 	_strV.removePrefix(_strV.size());
 	_strV.setSize(size);
 }
 
-string Token::getString() const { return _strV.getStr(); }
+string Token::getStr() const { return _strV.getStr(); }
 size_t Token::getStrBuffSize() const { return _strVBuffSize; }
 void Token::addToStrBuffSize() { _strVBuffSize += _strV.size(); }
 bool Token::needsMoreInput() { return _needsMoreInput; }
 void Token::resetNeedsMoreInputFlag() { _needsMoreInput = false; }
 
-void Token::loadParsingString(StrView parsingString) {
+void Token::loadParsingString(StrView parsingString)
+{
 	_parsingStr = parsingString;
 }

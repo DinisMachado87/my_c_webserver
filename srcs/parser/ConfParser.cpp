@@ -226,7 +226,7 @@ void ConfParser::parseListen()
 	_token.loadNextOfType(Token::WORD, "listen address");
 
 	Listen listen;
-	string portStr = _token.getString();
+	string portStr = _token.getStr();
 	string ipStr = "*";
 
 	// in case ip:port extracts ip
@@ -320,6 +320,6 @@ std::runtime_error ConfParser::parsingErr(const char *expected) const
 	ostringstream oss;
 	oss << "Error Parsing config: "
 		<< "Expected \"" << expected << "\" "
-		<< "got \"" << _token.getString() << "\" ";
+		<< "got \"" << _token.getStr() << "\" ";
 	return std::runtime_error(oss.str());
 }

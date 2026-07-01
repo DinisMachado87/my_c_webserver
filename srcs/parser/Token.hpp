@@ -61,7 +61,7 @@ public:
 	const char *getEnd() const;
 	uchar getType() const;
 	StrView getStrV() const;
-	std::string getString() const;
+	std::string getStr() const;
 	size_t getStrBuffSize() const;
 
 	void addToStrBuffSize();
