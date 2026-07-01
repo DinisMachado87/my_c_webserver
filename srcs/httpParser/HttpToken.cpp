@@ -35,7 +35,8 @@ uchar HttpToken::handleNewline() {
 	equalLen = i;
 
 	if (equalLen == 4) {
-		_strV = StrView(_parsingStr.data(), 4);
+		_strV = StrView(_parsingStr.data(), equalLen);
+		_parsingStr.removePrefix(equalLen);
 		_type = NEWLINE;
 		return DOUBLE;
 	}
@@ -46,7 +47,8 @@ uchar HttpToken::handleNewline() {
 	}
 	// case "\r\nFollowedByOtherCharacters"
 	if (equalLen >= 2) {
-		_strV = StrView(_parsingStr.data(), 2);
+		_strV = StrView(_parsingStr.data(), equalLen);
+		_parsingStr.removePrefix(equalLen);
 		_type = NEWLINE;
 		return SINGLE;
 	}

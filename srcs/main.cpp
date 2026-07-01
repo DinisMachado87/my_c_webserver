@@ -1,7 +1,6 @@
 #include "Engine.hpp"
 #include "Logger.hpp"
 #include "Signals.hpp"
-#include "webServ.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fstream>
@@ -14,7 +13,8 @@ using std::runtime_error;
 using std::string;
 using std::stringstream;
 
-static string readFile(const char *filepath) {
+static string readFile(const char *filepath)
+{
 	ifstream file(filepath);
 
 	if (!file.is_open())
@@ -27,12 +27,13 @@ static string readFile(const char *filepath) {
 	return buffer.str();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	try {
 		if (argc < 2)
 			throw runtime_error(
 				"Missing Argument. Use: ./webserv <config/path>");
-		else if (argc > 3)
+		else if (argc > 2)
 			throw runtime_error(
 				"Too many arguments. Use: ./webserv <config/path>");
 

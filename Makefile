@@ -24,21 +24,24 @@ endif
 
 # Source Main
 SRCS_MAIN		:= main.cpp
-# Sources modules (first word is the directory)
 SRCS_ENGINE		:= engine Engine.cpp Signals.cpp
 SRCS_SERVER		:= server Server.cpp Location.cpp Overrides.cpp
-SRCS_HTTP		:= http Request.cpp Response.cpp RequestLine.cpp RequestBuffer.cpp
+SRCS_HTTP		:= http Request.cpp RequestLine.cpp HttpStatus.cpp
 SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp \
-				   HttpParser.cpp HttpHeadersParser.cpp
+				   HttpParser.cpp HttpHeadersParser.cpp 
+SRCS_RESPONSES	:= responses Response.cpp ERRORResponse.cpp RedirectResponse.cpp
 SRCS_PATH		:= path PathConsolidator.cpp RequestPathConsolidator.cpp \
 				   Path.cpp RequestPath.cpp 
 SRCS_SOCKET		:= sockets ASocket.cpp Listening.cpp Connection.cpp CGISocketPair.cpp 
 SRCS_PARSER		:= parser Token.cpp Expect.cpp ConfParser.cpp
-SRCS_UTILS		:= utils StrView.cpp Clock.cpp StrViewMap.cpp BufferManager.cpp
+SRCS_BUFFERS	:= buffers BufferManager.cpp Segment.cpp SegmentList.cpp \
+				   StackBuffer.cpp StreamBuffer.cpp IOBuffer.cpp 
+SRCS_UTILS		:= utils StrView.cpp Clock.cpp StrViewMap.cpp 
 SRCS_LOGGER		:= logger Logger.cpp 
 
 SRC_GROUPS		:= SRCS_ENGINE SRCS_SERVER SRCS_SOCKET SRCS_PARSER SRCS_UTILS \
-				   SRCS_HTTP SRCS_LOGGER SRCS_PATH SRCS_HTTP_PARSER
+				   SRCS_HTTP SRCS_LOGGER SRCS_PATH SRCS_HTTP_PARSER SRCS_BUFFERS \
+				   SRCS_RESPONSES 
 
 define make_paths
 $(addprefix $(word 1,$(1))/,$(wordlist 2,$(words $(1)),$(1)))
@@ -52,8 +55,6 @@ endef
 # Build SRCS_CORE and SRCS_TEST_CORE dynamically from groups
 SRCS_CORE		:= $(foreach group,$(SRC_GROUPS),$(call make_paths,$($(group))))
 
-
-
 # If CLASS_ARG is provided, only include matching test files
 ifdef CLASS_ARG
 	SRCS_TEST_CORE	:= $(filter %/test_$(CLASS_ARG).cpp,$(foreach group,$(SRC_GROUPS),$(call make_test_paths,$($(group)))))
@@ -62,7 +63,7 @@ else
 endif
 
 # Extract module directories from source groups
-MODULES			:= $(foreach group,$(SRC_GROUPS),$(word 1,$($(group)))) $(ENGINE_DIR) $(UTILS_DIR) $(SOCKETS_DIR) $(LOGGER_DIR) $(PATH_DIR) $(HTTPPARSER_DIR)
+MODULES			:= $(foreach group,$(SRC_GROUPS),$(word 1,$($(group)))) $(ENGINE_DIR) $(UTILS_DIR) $(SOCKETS_DIR) $(LOGGER_DIR) $(PATH_DIR) $(HTTPPARSER_DIR) $(RESPONSES_DIR) $(RESPONSE_DIR) $(BODY_DIR)
 
 # Includes
 INCLUDE_DIRS	:= $(SRC_DIR) $(addprefix $(SRC_DIR)/,$(MODULES))

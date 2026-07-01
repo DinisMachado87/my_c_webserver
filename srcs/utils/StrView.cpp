@@ -72,7 +72,7 @@ bool StrView::operator<(const StrView &other) const {
 
 // Getters
 const char *StrView::data() const { return _data; }
-const char *StrView::end() const { return _data + _size; }
+const char *StrView::end() const { return _data + _size - 1; }
 size_t StrView::size() const { return _size; }
 bool StrView::empty() const { return _size == 0; }
 string StrView::getStr() const { return string(_data, _size); }

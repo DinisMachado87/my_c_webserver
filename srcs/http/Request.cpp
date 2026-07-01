@@ -1,5 +1,7 @@
 #include "Request.hpp"
 #include "BufferManager.hpp"
+#include "IOBuffer.hpp"
+#include "RequestPath.hpp"
 #include "webServ.hpp"
 #include <cstring>
 #include <iostream>
@@ -13,29 +15,36 @@ using std::stringstream;
 
 // Public constructors and destructors
 Request::Request(int fd, BufferManager &bufferManager) :
-	_buff(fd, bufferManager) {}
+	_buff(IOBuffer::REQUEST, fd, -1, bufferManager)
+{
+}
 
 Request::~Request() {}
 
 // Public Methods
 
 uchar Request::getMethod() const { return _requestLine.getMethod(); };
-const StrView &Request::getPath() const { return _requestLine.getPath(); };
 
-const StrView *Request::getHeaderValue(const char *key) const {
+RequestPath &Request::getPath() { return _requestLine.requestPath(); };
+
+const StrView *Request::getHeaderValue(const char *key) const
+{
 	StrView strv = key;
 	return _headers.find(strv);
 };
-const StrView *Request::getHeaderValue(StrView &key) const {
+const StrView *Request::getHeaderValue(StrView &key) const
+{
 	return _headers.find(key);
 };
 
-void Request::print(std::ostream &stream) const {
+void Request::print(std::ostream &stream) const
+{
 	stream << _requestLine;
 	stream << _headers;
 }
 
-ostream &operator<<(ostream &os, const Request &req) {
+ostream &operator<<(ostream &os, const Request &req)
+{
 	req.print(os);
 	return os;
 }

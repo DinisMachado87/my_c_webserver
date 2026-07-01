@@ -12,44 +12,55 @@
 #include <sys/epoll.h>
 #include <vector>
 
-class Engine {
+/* Higher class.
+ * Manages Sockets epool.
+ * Owns servers, sockets, the epoll fd,
+ * 	and the shared resorces that need to persist beyond socket lifetime
+ * like BufferManager and Cookies.  */
+class Engine
+{
 private:
-	// Explicit Disables
+	/* Explicit Disables*/
 	Engine(const Engine &other);
 	Engine &operator=(const Engine &other);
 
 protected:
 	int _fdEpoll;
 	std::vector<Server *> _servers;
-	std::map<int, ASocket *> _sockets;
+	std::map<int, ASocket *> _sockets; // fd -> socket, owns the pointers
 	BufferManager _bufferManager;
 
 	std::vector<StrView> _defaultsVecBuf;
 
-	// Methods
-	void logFlagUpdates(ASocket *socket, uint32_t events, uint32_t newEvents);
-	std::runtime_error handleError(const std::string errMsg, const int err);
-	void deleteSocket(ASocket *socket);
-	void updateFlags(ASocket *socket);
-	void pollLoop();
-	void createSockets();
+	/* Setup */
+	void epoll_init();
 	void buildServers(std::string &config);
+	void createSockets(); // one Listening per listen directive
+
+	/* Socket management */
+	void addSocket(ASocket *socket);	// registers in map + epoll
+	void deleteSocket(ASocket *socket); // removes from epoll, map, and deletes
 	ASocket *getSocket(int fd);
 	void setEventTo(int epollFd, uint operation, uint eventType, int socketFd,
 					ASocket *ptrToSock);
-	void addSocket(ASocket *socket);
-	void epoll_init();
+
+	/* Event loop */
+	void pollLoop();
+	void updateFlags(ASocket *socket); // syncs epoll interest with socket state
+
+	void logFlagUpdates(ASocket *socket, uint32_t events, uint32_t newEvents);
+	std::runtime_error handleError(const std::string errMsg, const int err);
 
 public:
-	// Constructors and destructors
 	Engine();
-	~Engine();
-	// Methods
+	~Engine(); // closes epoll fd, deletes all sockets and servers
+
+	// Entry point - Parses config, creates listening sockets, enters poll loop.
 	void run(std::string &config);
 };
 
 #ifdef LOGGING
-#define LOGEVENTS(socket, events, newEvents)                                   \
+#define LOGEVENTS(socket, events, newEvents) \
 	Engine::logFlagUpdates(socket, events, newEvents)
 #else
 #define LOGEVENTS(socket, events, newEvents) (void)0

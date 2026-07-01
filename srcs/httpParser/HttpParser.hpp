@@ -5,9 +5,12 @@
 #include "HttpHeadersParser.hpp"
 #include "HttpStates.hpp"
 #include "HttpToken.hpp"
+#include "IOBuffer.hpp"
+#include "Request.hpp"
 #include "RequestLineParser.hpp"
 #include "Response.hpp"
 #include "Server.hpp"
+#include "StrView.hpp"
 #include <linux/stat.h>
 #include <sys/types.h>
 #include <vector>
@@ -15,24 +18,43 @@
 #define BUFFER_SIZE 1024
 #define NEEDS_MORE_INPUT true
 
-class HttpParser {
+/* Incremental HTTP/1.x request parser. Driven by recvAndParse() —
+ * each call reads from the socket, feeds bytes to the tokenizer,
+ * and advances the state machine as far as input allows.
+ * Returns a completed Request* or NULL if more data is needed. */
+class HttpParser
+{
+public:
+	// Constructors and destructors
+	HttpParser(const Server &server, int fd, BufferManager &bufferManager);
+	~HttpParser();
+
+	// Only public access.
+	// Returns completed Request on success, NULL if more input needed.
+	// Throws HttpError on protocol violations, ClientClosed on EOF.
+	Request *recvAndParse();
+
 private:
 	const Server &_server;
 
 	int _fd;
 	BufferManager &_bufferManager;
+
 	Request *_request;
 	Response *_response;
+	const Location *_location; // resolved during VALIDATE
 
+	IOBuffer *_activeBuffer;
 	HttpToken _token;
 	Expect _expect;
 
+	/* Sub-parsers — each owns its own resume state */
 	RequestLineParser _requestLineParser;
 	HttpHeadersParser _headersParser;
 
 	ssize_t _charRead;
 	ssize_t _headerLen;
-	uchar _state;
+	uchar _mainState; // current state (see HttpStates.hpp)
 	uchar _subState;
 	size_t _nextBodySection;
 
@@ -41,11 +63,12 @@ private:
 
 	uint _status;
 
-	static const char *const bodyLabels[STATE_SIZE];
+	static const char *const bodyLabels[STATE_SIZE]; // for debug logging
 
-	// Methods
+	/* Internal steps */
+	void createGetResponse();
 	uchar handleNewline(uint singleNextState, uint doubleNextState);
-	void validateRequestLine();
+	void validate();
 	void setError(const uint errorCode, const char *detailMsg);
 	void validateRequest();
 	void validateKey(StrView Key);
@@ -56,19 +79,10 @@ private:
 	void parseHeaders();
 	void parseRequestLine();
 
-	// Static initializer for Token class
-	static const uchar *delimiters();
-	// Explicit disables
+	/* Explicit disables */
 	HttpParser();
 	HttpParser &operator=(const HttpParser &other);
 	HttpParser(const HttpParser &other);
 
 	friend class HttpParserTest;
-
-public:
-	// Constructors and destructors
-	HttpParser(const Server &server, int fd, BufferManager &bufferManager);
-	~HttpParser();
-	// Methods
-	Request *recvAndParse();
 };

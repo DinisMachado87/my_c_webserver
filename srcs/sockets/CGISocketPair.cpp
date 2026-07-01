@@ -5,9 +5,13 @@
 #include "BufferManager.hpp"
 #include "webServ.hpp"
 
-class CGISocketPair : public ASocket {
+/* Bidirectional pipe to a CGI child process.
+ * Tracks read/write halves independently — each half
+ * closes when its transfer is done. */
+class CGISocketPair : public ASocket
+{
 private:
-	// Explicit disables
+	/* Explicit disables */
 	CGISocketPair();
 	CGISocketPair(const CGISocketPair &other);
 	CGISocketPair &operator=(const CGISocketPair &other);
@@ -15,20 +19,20 @@ private:
 protected:
 	Response &_response;
 	uchar _state;
-	bool _inOpen;
-	bool _outOpen;
+	bool _inOpen;  // still reading from CGI child
+	bool _outOpen; // still writing to CGI child
 
 public:
-	// Constructors and destructors
 	CGISocketPair(const int fd, const Server &server,
 				  struct sockaddr_in serverAddr, Response &response,
 				  BufferManager &bufferManager);
 	~CGISocketPair();
-	// Operators overload
-	// I/O
+
+	/* I/O */
 	ASocket *handleIn();
 	void handleOut();
-	// methods
+
+	// Returns EPOLLIN | EPOLLOUT to be set for the next loop.
 	uint32_t getEventsNextLoop();
 };
 

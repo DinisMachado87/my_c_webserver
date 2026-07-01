@@ -29,7 +29,7 @@ void RequestLineParser::parse() {
 			_token.loadNextOfType(Token::WORD, "Http Method");
 			_requestLine._method = _expect.method();
 			if (DEFAULT == _requestLine._method)
-				throw HttpError::HTTP_BAD_REQUEST;
+				throw HttpError(HttpStatus::BAD_REQUEST);
 			_state = PATH;
 
 		case PATH: // fallthrough
@@ -43,13 +43,13 @@ void RequestLineParser::parse() {
 				if (_token.compare("HTTP/1.0"))
 					_requestLine._http1_1 = false;
 				else
-					throw HttpError::HTTP_VERSION_NOT_SUPPORTED;
+					throw HttpError(HttpStatus::VERSION_NOT_SUPPORTED);
 			}
 
 		case NEWLINE:
 			switch (_token.handleNewline()) {
 			case HttpToken::SINGLE:
-				_mainState = VALIDATE_REQUEST_LINE;
+				_mainState = VALIDATE;
 				return;
 			case HttpToken::DOUBLE:
 				_mainState = RETURN;

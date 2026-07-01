@@ -36,6 +36,7 @@ public:
 	RequestPath();
 	RequestPath(const StrView &pathStr);
 
+	void setType(uchar type);
 	uchar getType() const;
 	StrView const &getCgiExtension() const;
 

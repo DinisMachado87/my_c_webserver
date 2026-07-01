@@ -23,6 +23,7 @@ const StrView &Location::getReturnPath() const { return _returnPath; }
 const StrView &Location::getUploadPath() const { return _uploadPath; }
 const StrView &Location::getRewriteOldPath() const { return _rewrite_old; }
 const StrView &Location::getRewriteNewPath() const { return _rewrite_new; }
+const StrView &Location::getRoot() const { return _overrides.getRoot(); }
 uint Location::getReturncode() const { return _returnCode; }
 bool Location::getUploadEnabled() const { return _uploadEnable; }
 
@@ -31,11 +32,7 @@ const Span<StrView> &Location::getCgiExtensions() const {
 	return _cgiExtensions;
 }
 
-const char *Location::findCgiPath(StrView &extension) const {
-	return findCgiPath(extension.data());
-}
-
-const char *Location::findCgiPath(const char *extension) const {
+const char *Location::findCgiPath(const StrView &extension) const {
 	for (size_t i = 0; i < _cgiExtensions.len(); i++)
 		if (_cgiExtensions[i].compare(extension))
 			return _cgiPath[i].data();

@@ -5,13 +5,23 @@
 #include "RequestLine.hpp"
 #include "StrView.hpp"
 
-class RequestLineParser {
+/* Incrementally parses "METHOD /path HTTP/1.x\r\n".
+ * Resumes from _state if the token stream runs dry mid-line. */
+class RequestLineParser
+{
+public:
+	RequestLineParser(HttpToken &token, Expect &expect,
+					  RequestLine &requestline, uchar &mainState);
+	~RequestLineParser();
+
+	// Advances as far as input allows. Throws HttpError on protocol violations.
+	void parse();
+
 private:
 	friend class HttpParser;
-	// Explicit disables
+	/* Explicit disables*/
 	RequestLineParser();
 	RequestLineParser(const RequestLineParser &other);
-	// RequestLineParser &operator=(const RequestLineParser &other);
 
 protected:
 	HttpToken &_token;
@@ -23,12 +33,4 @@ protected:
 	uchar _state;
 	uchar &_mainState;
 	enum e_state { METHOD, PATH, HTTP, NEWLINE };
-
-public:
-	// Constructors and destructors
-	RequestLineParser(HttpToken &token, Expect &expect,
-					  RequestLine &requestline, uchar &mainState);
-	~RequestLineParser();
-	// Methods
-	void parse();
 };

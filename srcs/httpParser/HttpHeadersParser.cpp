@@ -43,7 +43,10 @@ void HttpHeadersParser::parseHeaders(const uchar curState) {
 			case HttpToken::ENDOFILE:
 				return;
 			case HttpToken::DOUBLE:
-				_mainState = curState + 1;
+				_headers->insert(make_pair(_key, _value));
+				_state = KEY;
+				_mainState++;
+				return;
 			case HttpToken::SINGLE: // fallthrough
 				_headers->insert(make_pair(_key, _value));
 				_state = KEY;

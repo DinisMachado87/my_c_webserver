@@ -16,7 +16,7 @@ Path::Path(const StrView &path, const StrView &query, const StrView &fragment) :
 	_fragment(fragment) {}
 
 // Getters
-StrView const &Path::getPath() const { return _path; }
+StrView const &Path::path() const { return _path; }
 StrView const &Path::getQuery() const { return _query; }
 StrView const &Path::getFragment() const { return _fragment; }
 

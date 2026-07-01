@@ -1,4 +1,5 @@
 #include "RequestLine.hpp"
+#include "RequestPath.hpp"
 #include "StrView.hpp"
 #include "webServ.hpp"
 
@@ -15,7 +16,7 @@ RequestLine::~RequestLine() {}
 // Public Methods
 
 uchar RequestLine::getMethod() const { return _method; };
-const StrView &RequestLine::getPath() const { return _path.getPath(); }
+RequestPath &RequestLine::requestPath() { return _path; }
 const StrView &RequestLine::getPathFragment() const {
 	return _path.getFragment();
 }

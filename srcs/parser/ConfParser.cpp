@@ -35,10 +35,26 @@ ConfParser::ConfParser(string &configStr, vector<Server *> &servers,
 	_newLocation(_newServer->_strvVecBuf),
 	_defaultsVecBuff(defaultsVecBuff),
 	_vecCursor(0),
-	_token(Token::configDelimiters(), configStr.c_str(), configStr.size()),
+	_token(configDelimiters(), configStr.c_str(), configStr.size()),
 	_expect(_token) {};
 
 ConfParser::~ConfParser() {}
+
+const uchar *ConfParser::configDelimiters()
+{
+	static uchar table[256] = {0};
+	table[(uchar)' '] = Token::SPACE;
+	table[(uchar)'\t'] = Token::SPACE;
+	table[(uchar)'\n'] = Token::SPACE;
+	table[(uchar)'#'] = Token::COMMENT;
+	table[(uchar)'"'] = Token::QUOTE;
+	table[(uchar)'{'] = Token::OPENBLOCK;
+	table[(uchar)'}'] = Token::CLOSEBLOCK;
+	table[(uchar)';'] = Token::SEMICOLON;
+	table[(uchar)'\\'] = Token::EXCAPE;
+	table[(uchar)'\0'] = Token::ENDOFILE;
+	return table;
+}
 
 /* CONFIG STRUCTURE
  *
@@ -60,7 +76,8 @@ ConfParser::~ConfParser() {}
  * */
 
 // Main controlflow
-void ConfParser::createServers() {
+void ConfParser::createServers()
+{
 	while (Token::WORD == _token.loadNext() && _token.compare("server"))
 		nextServer();
 	if (_token._type != Token::ENDOFILE)
@@ -68,7 +85,8 @@ void ConfParser::createServers() {
 	LOG(Logger::LOG, "Done Parsing");
 }
 
-void ConfParser::nextServer() {
+void ConfParser::nextServer()
+{
 	_token.loadNextOfType(Token::OPENBLOCK, "{");
 	while (1) {
 		switch (_token.loadNext()) {
@@ -89,14 +107,16 @@ void ConfParser::nextServer() {
 }
 
 // Parse Structures
-void ConfParser::parseServerLine() {
+void ConfParser::parseServerLine()
+{
 	if (_token.compare("listen"))
 		parseListen();
 	else if (!parseOverrides(_newServer->_defaults._overrides))
 		throw parsingErr("Unknown directive");
 }
 
-void ConfParser::parseLocation() {
+void ConfParser::parseLocation()
+{
 	_expect.path(&_newLocation._path);
 	_token.loadNextOfType(Token::OPENBLOCK, "{");
 	while (1) {
@@ -115,7 +135,8 @@ void ConfParser::parseLocation() {
 	}
 }
 
-void ConfParser::parseLocationline() {
+void ConfParser::parseLocationline()
+{
 	Location &loc = _newLocation;
 
 	if (_token.compare("allowed_methods")) {
@@ -146,7 +167,8 @@ void ConfParser::parseLocationline() {
 	_token.loadNextOfType(Token::SEMICOLON, "';'");
 }
 
-bool ConfParser::parseOverrides(Overrides &ov) {
+bool ConfParser::parseOverrides(Overrides &ov)
+{
 	const bool isOverridesParam = true;
 
 	if (_token.compare("root")) {
@@ -176,7 +198,8 @@ bool ConfParser::parseOverrides(Overrides &ov) {
 }
 
 // Parse elements
-void ConfParser::parseMethod(Overrides &ov) {
+void ConfParser::parseMethod(Overrides &ov)
+{
 	uchar method = DEFAULT;
 	while (1) {
 		_token.loadNext();
@@ -198,7 +221,8 @@ void ConfParser::parseMethod(Overrides &ov) {
 	}
 }
 
-void ConfParser::parseListen() {
+void ConfParser::parseListen()
+{
 	_token.loadNextOfType(Token::WORD, "listen address");
 
 	Listen listen;
@@ -220,21 +244,24 @@ void ConfParser::parseListen() {
 }
 
 // Consolidate
-static inline void consolidateStrv(StrView &strv, char *&dest) {
+static inline void consolidateStrv(StrView &strv, char *&dest)
+{
 	if (strv.size() == 0)
 		return;
 	strv.consolidate(dest);
 	dest += strv.size();
 }
 
-static inline void consolidateMap(map<uint, StrView> &errors, char *&dest) {
+static inline void consolidateMap(map<uint, StrView> &errors, char *&dest)
+{
 	map<uint, StrView>::iterator cur = errors.begin();
 	map<uint, StrView>::iterator end = errors.end();
 	for (; cur != end; ++cur)
 		consolidateStrv(cur->second, dest);
 }
 
-void ConfParser::consolidatelocation(Location &loc, char *&dest) {
+void ConfParser::consolidatelocation(Location &loc, char *&dest)
+{
 	// location StrViews
 	consolidateStrv(loc._path, dest);
 	consolidateStrv(loc._returnPath, dest);
@@ -246,7 +273,8 @@ void ConfParser::consolidatelocation(Location &loc, char *&dest) {
 	consolidateMap(loc._overrides._error, dest);
 }
 
-void ConfParser::consolidateAndStoreNewServer() {
+void ConfParser::consolidateAndStoreNewServer()
+{
 	// instantiate temporary program defaults
 	uchar progDefSet = (1 << F_ROOT) | (1 << F_INDEX) | (1 << F_AUTOINDEX)
 					   | (1 << F_CLIENT_BODY) | (1 << F_METHODS);
@@ -287,7 +315,8 @@ void ConfParser::consolidateAndStoreNewServer() {
 }
 
 // Err Handeling
-std::runtime_error ConfParser::parsingErr(const char *expected) const {
+std::runtime_error ConfParser::parsingErr(const char *expected) const
+{
 	ostringstream oss;
 	oss << "Error Parsing config: "
 		<< "Expected \"" << expected << "\" "

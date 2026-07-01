@@ -10,7 +10,11 @@
 #define DEFAULT_LOCATION -1
 #define NO_INDEX -2
 
-class Location {
+/* A URI path block from the config — holds its own Overrides
+ * plus location-specific directives (rewrite, CGI, upload).
+ * Populated by ConfParser; read-only at runtime. */
+class Location
+{
 private:
 	Overrides _overrides;
 	Span<StrView> _cgiExtensions;
@@ -29,30 +33,32 @@ private:
 public:
 	Location(std::vector<StrView> &vecBuf);
 
-	// Read interface
+	/* Read interface */
 	const StrView &getPath() const;
 	const StrView &getReturnPath() const;
 	const StrView &getUploadPath() const;
 	const StrView &getRewriteOldPath() const;
 	const StrView &getRewriteNewPath() const;
+	const StrView &getRoot() const;
 
 	const Overrides &getOverrides() const;
-	const char *findCgiPath(StrView &extension) const;
-	const char *findCgiPath(const char *extension) const;
+	// Returns the interpreter path for extension, or NULL if not CGI.
+	const char *findCgiPath(const StrView &extension) const;
 	uint getReturncode() const;
 	bool getUploadEnabled() const;
 	bool isAllowedMethod(const uchar method) const;
 	const Span<StrView> &getCgiExtensions() const;
 	const Span<StrView> &getCgiPath() const;
 
-	// Print
+	/* Print */
 	void printLocation(std::ostream &stream) const;
 	void printLocation(ssize_t index, std::ostream &stream) const;
 	void printStrvSpan(const char *msg, const Span<StrView> &span,
 					   std::ostream &stream) const;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const Location &location) {
+inline std::ostream &operator<<(std::ostream &os, const Location &location)
+{
 	location.printLocation(os);
 	return os;
 }

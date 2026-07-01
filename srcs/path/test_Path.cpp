@@ -1,7 +1,6 @@
 #include "PathConsolidator.hpp"
 #include "StrView.hpp"
 #include "test_PathBase.hpp"
-#include <sstream>
 #include <string>
 
 class PathTest : public PathTestBase {
@@ -16,13 +15,13 @@ protected:
 };
 
 TEST_F(PathTest, DefaultConstruction) {
-	EXPECT_EQ(_path.getPath().size(), 0u);
+	EXPECT_EQ(_path.path().size(), 0u);
 	EXPECT_EQ(_path.getQuery().size(), 0u);
 	EXPECT_EQ(_path.getFragment().size(), 0u);
 }
 TEST_F(PathTest, GetPath) {
 	setPath("/var/www/html");
-	EXPECT_EQ(_path.getPath().getStr(), "/var/www/html");
+	EXPECT_EQ(_path.path().getStr(), "/var/www/html");
 }
 TEST_F(PathTest, GetQuery) {
 	std::string str = "/search?q=hello";
@@ -47,5 +46,5 @@ TEST_F(PathTest, AssignmentOperator) {
 TEST_F(PathTest, SelfAssignment) {
 	setPath("/var/www/html");
 	_path = _path;
-	EXPECT_EQ(_path.getPath().getStr(), "/var/www/html");
+	EXPECT_EQ(_path.path().getStr(), "/var/www/html");
 }

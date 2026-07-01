@@ -4,25 +4,35 @@
 #include "StrView.hpp"
 #include "Token.hpp"
 
-class HttpToken : public Token {
-private:
-	HttpToken();
-	HttpToken(const HttpToken &other);
-
+/* Token subclass with the HTTP delimiter table — treats \r\n as
+ * newline and has no block/semicolon/comment/quote rules.
+ * Adds CRLF handling and chunked-encoding helpers. */
+class HttpToken : public Token
+{
 public:
 	enum e_httpLine { SINGLE, DOUBLE };
-	// Constructors and destructors
-	HttpToken(StrView parsingString); // not by ref request buffer needs an
-									  // unchanged copy
+
+	// Takes StrView by value — caller keeps an unchanged copy.
+	HttpToken(StrView parsingString);
 	~HttpToken();
-	// Operators overload
+
+	/* Operators overload*/
 	HttpToken &operator=(const HttpToken &other);
-	// Methods
-	// uchar loadHttpNewLine();
+
 	void loadNextHex(size_t *ret);
 	StrView getBody(size_t bodySize);
+
+	/* CRLF detection — returns SINGLE (\r\n), DOUBLE (\r\n\r\n),
+	 * or sets _needsMoreInput if the sequence is truncated. */
 	uchar handleNewline();
+
+	// Builds the HTTP delimiter table (spaces + newlines only).
 	static const uchar *httpDelimiters();
+
+private:
+	/* Explicit disables */
+	HttpToken();
+	HttpToken(const HttpToken &other);
 };
 
 #endif

@@ -4,13 +4,18 @@ using std::ostream;
 
 HttpStatus::HttpStatus(uint code, const char *reason) :
 	_code(code),
-	_msg(reason) {}
+	_msg(reason)
+{
+}
 
 HttpStatus::HttpStatus(const HttpStatus &other) :
 	_code(other._code),
-	_msg(other._msg) {}
+	_msg(other._msg)
+{
+}
 
-HttpStatus &HttpStatus::operator=(const HttpStatus &other) {
+HttpStatus &HttpStatus::operator=(const HttpStatus &other)
+{
 	if (this != &other) {
 		_code = other._code;
 		_msg = other._msg;
@@ -20,8 +25,9 @@ HttpStatus &HttpStatus::operator=(const HttpStatus &other) {
 
 uint HttpStatus::getCode() const { return _code; }
 const char *HttpStatus::getReason() const { return _msg; }
-ostream &HttpStatus::print(ostream &stream) const {
-	stream << "[" << _code << "]" << _msg;
+ostream &HttpStatus::print(ostream &stream) const
+{
+	stream << _code << " " << _msg;
 	return stream;
 }
 

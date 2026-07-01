@@ -4,7 +4,8 @@
 #include <ostream>
 #include <webServ.hpp>
 
-class HttpStatus {
+class HttpStatus
+{
 private:
 	uint _code;
 	const char *_msg;
@@ -48,7 +49,8 @@ public:
 	static const HttpStatus VERSION_NOT_SUPPORTED;
 };
 
-std::ostream &operator<<(std::ostream &stream, const HttpStatus &status) {
+inline std::ostream &operator<<(std::ostream &stream, const HttpStatus &status)
+{
 	status.print(stream);
 	return stream;
 }

@@ -39,16 +39,16 @@ std::runtime_error Token::parsingErr(const char *expected) const {
 // Public Methods
 const uchar *Token::configDelimiters() {
 	static uchar isDelimiter[256] = {0};
-	isDelimiter[' '] = SPACE;
-	isDelimiter['\t'] = SPACE;
-	isDelimiter['\n'] = SPACE;
-	isDelimiter['#'] = COMMENT;
-	isDelimiter['"'] = QUOTE;
-	isDelimiter['{'] = OPENBLOCK;
-	isDelimiter['}'] = CLOSEBLOCK;
-	isDelimiter[';'] = SEMICOLON;
-	isDelimiter['\\'] = EXCAPE;
-	isDelimiter['\0'] = ENDOFILE;
+	isDelimiter[(uchar)' '] = SPACE;
+	isDelimiter[(uchar)'\t'] = SPACE;
+	isDelimiter[(uchar)'\n'] = SPACE;
+	isDelimiter[(uchar)'#'] = COMMENT;
+	isDelimiter[(uchar)'"'] = QUOTE;
+	isDelimiter[(uchar)'{'] = OPENBLOCK;
+	isDelimiter[(uchar)'}'] = CLOSEBLOCK;
+	isDelimiter[(uchar)';'] = SEMICOLON;
+	isDelimiter[(uchar)'\\'] = EXCAPE;
+	isDelimiter[(uchar)'\0'] = ENDOFILE;
 	return isDelimiter;
 }
 

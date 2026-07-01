@@ -23,7 +23,7 @@ protected:
 
 public:
 	// Getters
-	StrView const &getPath() const;
+	StrView const &path() const;
 	StrView const &getQuery() const;
 	StrView const &getFragment() const;
 

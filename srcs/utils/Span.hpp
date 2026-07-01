@@ -6,7 +6,10 @@
 #include <stdexcept>
 #include <vector>
 
-template <typename T> class Span {
+/* Non-owning view into a subrange of a std::vector.
+ * Bounds-checked access via operator[]. */
+template <typename T> class Span
+{
 private:
 	std::vector<T> *_vecBuf;
 	uchar _offset;
@@ -16,22 +19,28 @@ public:
 	Span(std::vector<T> &vecBuf) :
 		_vecBuf(&vecBuf),
 		_offset(0),
-		_len(0) {}
+		_len(0)
+	{
+	}
 
 	Span(std::vector<T> &vecBuf, uint offset, uchar len) :
 		_vecBuf(&vecBuf),
 		_offset(offset),
-		_len(len) {}
+		_len(len)
+	{
+	}
 
 	Span(const Span &other) :
 		_vecBuf(other._vecBuf),
 		_offset(other._offset),
-		_len(other._len) {}
+		_len(other._len)
+	{
+	}
 
 	~Span() {}
 
-	// Non-const version calls const version
-	Span &operator=(const Span &other) {
+	Span &operator=(const Span &other)
+	{
 		if (this == &other)
 			return *this;
 
@@ -41,12 +50,14 @@ public:
 		return *this;
 	}
 
-	T &operator[](uint i) {
+	// Non-const delegates to const to avoid duplicating bounds check.
+	T &operator[](uint i)
+	{
 		return const_cast<T &>(static_cast<const Span &>(*this)[i]);
 	}
 
-	// Const version has the actual logic
-	const T &operator[](uint i) const {
+	const T &operator[](uint i) const
+	{
 		if (i >= _len)
 			throw std::out_of_range("Span index out of range");
 		return (*_vecBuf)[_offset + i];
@@ -56,7 +67,8 @@ public:
 };
 
 template <typename T>
-std::ostream &operator<<(std::ostream &stream, const Span<T> &span) {
+std::ostream &operator<<(std::ostream &stream, const Span<T> &span)
+{
 	size_t i = 0;
 	for (; i < span.len(); i++) {
 		bool isLast = (i + 1 == span.len());

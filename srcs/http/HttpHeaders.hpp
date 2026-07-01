@@ -3,9 +3,10 @@
 
 #include "StrViewMap.hpp"
 
-class HttpHeaders {
+class HttpHeaders
+{
 private:
-	// explicit disables
+	/* explicit disables */
 	HttpHeaders(const HttpHeaders &other);
 	HttpHeaders &operator=(const HttpHeaders &other);
 
@@ -13,15 +14,8 @@ protected:
 	StrViewMap _headers;
 
 public:
-	// Constructors and destructors
 	HttpHeaders();
 	~HttpHeaders();
-
-	// Operators overload
-
-	// Getters and setters
-
-	// Methods
 };
 
 #endif

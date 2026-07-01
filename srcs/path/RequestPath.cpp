@@ -26,6 +26,7 @@ const char *RequestPath::typeLabels[SIZE] = {
 #undef type
 };
 
+void RequestPath::setType(uchar type) { _type = type; }
 uchar RequestPath::getType() const { return _type; }
 
 const StrView &RequestPath::getCgiExtension() const { return _sufix; }

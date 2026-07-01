@@ -10,7 +10,8 @@
 #include <sys/epoll.h>
 #include <vector>
 
-class Listen {
+class Listen
+{
 private:
 	in_addr_t _host;
 	uint16_t _port;
@@ -22,22 +23,25 @@ public:
 	in_addr_t getHost() const;
 };
 
-class Server {
+/* Parsed config for one server block. Owns contiguous memory for all
+ * StrViews (_strBuf) and Spans (_strvVecBuf) so lookups at runtime
+ * hit a single allocation. */
+class Server
+{
 private:
-	// Contiguous StrView buffers
+	/* Contiguous StrView buffers*/
 	std::string _strBuf;			  // single buffer for all strviews
 	std::vector<StrView> _strvVecBuf; // single buffer for all spans
 
-	// Server Components
-	Location _defaults;
+	/* Server Components*/
+	Location _defaults; // server-level overrides, used as fallback
 	std::vector<Listen> _listen;
 	std::vector<Location> _locations;
 
-	// Explicit disables
+	/* Explicit disables*/
 	Server &operator=(const Server &other);
 	Server(const Server &other);
 
-	// Pivate Methods
 	std::string formatIP(in_addr_t addr) const;
 	void printBufferSizes(std::ostream &stream) const;
 
@@ -48,21 +52,13 @@ public:
 	Server();
 	~Server();
 
-	// Lookup — returns NULL when no location matches the path.
+	// Returns matching location, or _defaults if none matches.
 	const Location &findLocation(const StrView &path) const;
 
-	// Resolution (inheritable fields walk up to 3 tiers; pass found loc or
-	// NULL).
-	uchar resolveMethods(const Location *loc) const;
-	const char *resolveRoot(const Location *loc) const;
-	const Span<StrView> &resolveIndex(const Location *loc) const;
-	bool resolveAutoindex(const Location *loc) const;
-	size_t resolveClientMaxBody(const Location *loc) const;
-	const char *resolveErrorFile(const Location *loc, uint code) const;
-
-	// Listen accessors
+	/* Listen accessors */
 	const std::vector<Listen> &getListen() const;
 	size_t getListenLen() const;
+
 	void getServerStr(std::ostream &stream) const;
 };
 

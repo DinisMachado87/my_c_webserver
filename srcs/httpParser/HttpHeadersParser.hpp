@@ -7,9 +7,20 @@
 #include "StrViewMap.hpp"
 #include "webServ.hpp"
 
-class HttpHeadersParser {
+/* Incrementally parses "Key: Value\r\n" pairs until a double CRLF.
+ * Advances _mainState when the header block ends. Resumes from
+ * _state if input runs dry mid-header. */
+class HttpHeadersParser
+{
+public:
+	HttpHeadersParser(StrViewMap *headers, uchar &mainState, HttpToken &token,
+					  Expect &expect);
+	~HttpHeadersParser();
+
+	void parseHeaders(const uchar curState);
+
 private:
-	// Explicit disables
+	/* Explicit disables*/
 	HttpHeadersParser(const HttpHeadersParser &other);
 	HttpHeadersParser &operator=(const HttpHeadersParser &other);
 	HttpHeadersParser();
@@ -26,14 +37,6 @@ protected:
 	StrViewMap *_headers;
 	StrView _key;
 	StrView _value;
-
-public:
-	// Constructors and destructors
-	HttpHeadersParser(StrViewMap *headers, uchar &mainState, HttpToken &token,
-					  Expect &expect);
-	~HttpHeadersParser();
-	// Methods
-	void parseHeaders(const uchar curState);
 };
 
 #endif

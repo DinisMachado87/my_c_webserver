@@ -1,12 +1,13 @@
-// HttpError.hpp
-#ifndef HTTPERROR_HPP
-#define HTTPERROR_HPP
+#pragma once
 
 #include "HttpStatus.hpp"
 #include <exception>
 #include <ostream>
 
-class HttpError : public std::exception {
+/* Throwable HTTP error — carries a status code and optional detail.
+ * Caught by the parser to build error responses. */
+class HttpError : public std::exception
+{
 	HttpStatus _status;
 	const char *_detail;
 
@@ -22,9 +23,8 @@ public:
 	const std::ostream &print(std::ostream &stream) const;
 };
 
-std::ostream &operator<<(std::ostream &stream, const HttpError &error) {
+inline std::ostream &operator<<(std::ostream &stream, const HttpError &error)
+{
 	error.print(stream);
 	return stream;
 }
-
-#endif

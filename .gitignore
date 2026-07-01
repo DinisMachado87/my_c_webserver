@@ -5,3 +5,5 @@ compile_commands.json
 .clang-format
 http_notes.md
 serverLog.txt
+*.txt
+context
