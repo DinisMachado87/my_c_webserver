@@ -54,3 +54,18 @@ Segment *SegmentList::pop(Segment *seg)
 }
 size_t SegmentList::totalLen() const { return _totalLen; }
 bool SegmentList::empty() const { return _readEnd == NULL; }
+
+void SegmentList::append(const char *data, size_t len)
+{
+	while (len > 0) {
+		if (!_writeEnd || _writeEnd->writable() == 0) {
+			Segment *seg = _buffManager.getBuffer();
+			pushBack(seg);
+		}
+		size_t n = _writeEnd->copyIn(data, len);
+		data += n;
+		len -= n;
+	}
+}
+
+void SegmentList::append(const StrView &sv) { append(sv.data(), sv.size()); }

@@ -26,7 +26,7 @@ bool StrViewMap::match(const StrView &a, const StrView &b, e_case sensitivity)
 {
 	if (a.size() != b.size())
 		return false;
-	if (case == sensitivity)
+	if (SENSITIVE == sensitivity)
 		return a == b;
 	for (size_t i = 0; i < a.size(); i++)
 		if (std::tolower(a.data()[i]) != std::tolower(b.data()[i]))
@@ -53,6 +53,11 @@ const StrView *StrViewMap::find(const StrView &key, e_case sensitivity) const
 void StrViewMap::insert(pair<StrView, StrView> newPair)
 {
 	_pairs.push_back(newPair);
+}
+
+void StrViewMap::insert(const StrView &key, const StrView &value)
+{
+	_pairs.push_back(std::make_pair(key, value));
 }
 
 void StrViewMap::set(const StrView &key, const StrView &value,

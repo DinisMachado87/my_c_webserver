@@ -30,6 +30,7 @@ public:
 	void setIfMissing(const StrView &key, const StrView &value,
 					  e_case sensitivity = INSENSITIVE);
 	void insert(std::pair<StrView, StrView> newPair);
+	void insert(const StrView &key, const StrView &value);
 
 private:
 	std::vector<std::pair<StrView, StrView> > _pairs;

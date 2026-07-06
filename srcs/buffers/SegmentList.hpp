@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BufferManager.hpp"
+#include "StrView.hpp"
 #include <cstddef>
 
 /* Doubly-linked list of Segments. Tracks cumulative totalLen.
@@ -23,6 +24,11 @@ public:
 	// Appends seg to the write end. seg->_next must be NULL.
 	void pushBack(Segment *seg);
 
+	// Raw pointer — no strlen, for non-terminated buffers.
+	void append(const char *data, size_t len);
+	// String literals implicitly convert to StrView (calls strlen).
+	void append(const StrView &sv);
+
 private:
 	// Explicit disables
 	SegmentList &operator=(const SegmentList &other);
@@ -40,4 +46,10 @@ protected:
 	// Unlinks seg from the list and returns it.
 	// Caller is responsible for returning it to BufferManager.
 	Segment *pop(Segment *seg);
+};
+
+inline SegmentList &operator<<(SegmentList &out, const StrView &sv)
+{
+	out.append(sv);
+	return out;
 };
