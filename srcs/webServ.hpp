@@ -3,7 +3,6 @@
 #include <csignal>
 
 /* Project-wide constants, limits, and typedefs. */
-
 #define VERBOSE 1
 
 /* Unix return conventions */
@@ -61,6 +60,7 @@ enum methods { DEFAULT, GET, POST, DELETE };
 
 typedef unsigned int uint;
 typedef unsigned char uchar;
+typedef unsigned long ulong;
 
 extern volatile sig_atomic_t g_shutdown;
 

@@ -29,9 +29,10 @@ SRCS_SERVER		:= server Server.cpp Location.cpp Overrides.cpp
 SRCS_HTTP		:= http Request.cpp RequestLine.cpp HttpStatus.cpp
 SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp \
 				   HttpParser.cpp HttpHeadersParser.cpp 
-SRCS_RESPONSES	:= responses Response.cpp ERRORResponse.cpp RedirectResponse.cpp
+SRCS_RESPONSES	:= responses Response.cpp ERRORResponse.cpp RedirectResponse.cpp \
+				   ResponseHeaders.cpp
 SRCS_PATH		:= path PathConsolidator.cpp RequestPathConsolidator.cpp \
-				   Path.cpp RequestPath.cpp 
+				   Path.cpp RequestPath.cpp
 SRCS_SOCKET		:= sockets ASocket.cpp Listening.cpp Connection.cpp CGISocketPair.cpp 
 SRCS_PARSER		:= parser Token.cpp Expect.cpp ConfParser.cpp
 SRCS_BUFFERS	:= buffers BufferManager.cpp Segment.cpp SegmentList.cpp \
