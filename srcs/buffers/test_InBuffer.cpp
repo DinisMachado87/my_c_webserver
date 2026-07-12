@@ -1,5 +1,5 @@
 #include "BufferManager.hpp"
-#include "Exception.hpp"
+#include "ClientClosed.hpp"
 #include "InBuffer.hpp"
 #include "StrView.hpp"
 #include <gtest/gtest.h>

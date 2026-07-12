@@ -19,7 +19,11 @@ SRCS			:= BufferManager.cpp SegmentList.cpp Segment.cpp \
 				   StackBuffer.cpp StreamBuffer.cpp \
 				   InBuffer.cpp OutBuffer.cpp InOutBuffer.cpp \
 				   ChunkEncoder.cpp ChunkDecoder.cpp 
-TEST_SRCS		:= test_BufferManager.cpp test_Segment.cpp test_StackBuffer.cpp
+TEST_SRCS		:= $(addprefix test_,$(SRCS))
+
+ifdef FILTER_ARG
+	TEST_SRCS	:= $(filter test_$(FILTER_ARG).cpp,$(TEST_SRCS))
+endif
 
 IS_DEBUG		:= $(filter debug debug_test,$(MAKECMDGOALS))
 IS_TEST			:= $(filter test debug_test,$(MAKECMDGOALS))
