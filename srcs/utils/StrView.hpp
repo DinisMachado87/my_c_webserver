@@ -1,6 +1,5 @@
 #pragma once
 
-#include "webServ.hpp"
 #include <cstring>
 #include <ostream>
 #include <string>
@@ -14,6 +13,8 @@ class StrView
 	size_t _size;
 
 public:
+	enum splitPosition { BEFORE, AFTER };
+
 	StrView();
 	StrView(const char *str);
 	StrView(const char *data, size_t size);
@@ -63,7 +64,7 @@ public:
 	// Splits keeping separator at the start of each segment.
 	std::vector<StrView> splitBefore(char c) const;
 	// Returns tail after last occurrence of c.
-	StrView lastSplit(char c, bool splitPosition = AFTER) const;
+	StrView lastSplit(char c, splitPosition trimPosition = AFTER) const;
 
 	void printBuffer() const;
 	void intoStream(std::ostream &os) const;

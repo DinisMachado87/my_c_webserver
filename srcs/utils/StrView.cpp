@@ -1,5 +1,4 @@
 #include "StrView.hpp"
-#include "webServ.hpp"
 #include <climits>
 #include <cstddef>
 #include <cstring>
@@ -17,32 +16,45 @@ static const char s_empty[] = "";
 // Constructors
 StrView::StrView() :
 	_data(s_empty),
-	_size(0) {}
+	_size(0)
+{
+}
 
 StrView::StrView(const char *str) :
 	_data(str ? str : s_empty),
-	_size(str ? std::strlen(str) : 0) {}
+	_size(str ? std::strlen(str) : 0)
+{
+}
 
 StrView::StrView(const char *data, size_t size) :
 	_data(data ? data : s_empty),
-	_size(data ? size : 0) {}
+	_size(data ? size : 0)
+{
+}
 
 StrView::StrView(char *data, size_t size) :
 	_data(data ? data : s_empty),
-	_size(data ? size : 0) {}
+	_size(data ? size : 0)
+{
+}
 
 StrView::StrView(const std::string &s) :
 	_data(s.c_str()),
-	_size(s.size()) {}
+	_size(s.size())
+{
+}
 
 StrView::StrView(const StrView &other) :
 	_data(other._data),
-	_size(other._size) {}
+	_size(other._size)
+{
+}
 
 StrView::~StrView() {}
 
 // Operators
-StrView &StrView::operator=(const StrView &other) {
+StrView &StrView::operator=(const StrView &other)
+{
 	if (this == &other)
 		return *this;
 	_data = other._data;
@@ -52,17 +64,20 @@ StrView &StrView::operator=(const StrView &other) {
 
 bool StrView::operator==(const StrView &other) const { return compare(other); }
 
-bool StrView::operator!=(const StrView &other) const {
+bool StrView::operator!=(const StrView &other) const
+{
 	return !(*this == other);
 }
 
-bool StrView::operator==(const char *str) const {
+bool StrView::operator==(const char *str) const
+{
 	return *this == StrView(str);
 }
 
 bool StrView::operator!=(const char *str) const { return !(*this == str); }
 
-bool StrView::operator<(const StrView &other) const {
+bool StrView::operator<(const StrView &other) const
+{
 	int r = std::strncmp(_data, other._data,
 						 _size < other._size ? _size : other._size);
 	if (r != 0)
@@ -81,29 +96,34 @@ void StrView::setSize(size_t size) { _size = size; }
 void StrView::setStart(const char *str) { _data = str; }
 
 // Modifiers
-void StrView::removePrefix(size_t n) {
+void StrView::removePrefix(size_t n)
+{
 	size_t trimSize = (n < _size) ? n : _size;
 	_data += trimSize;
 	_size -= trimSize;
 }
 
-void StrView::removeSuffix(size_t n) {
+void StrView::removeSuffix(size_t n)
+{
 	size_t trimSize = (n < _size) ? n : _size;
 	_size -= trimSize;
 }
 
 // Methods
-bool StrView::compare(const StrView &other) const {
+bool StrView::compare(const StrView &other) const
+{
 	return compare(other, _size);
 }
 
-bool StrView::compare(const StrView &other, size_t len) const {
+bool StrView::compare(const StrView &other, size_t len) const
+{
 	if (len > _size || len > other._size)
 		return false;
 	return std::strncmp(_data, other._data, len) == 0;
 }
 
-size_t StrView::find(char c, size_t offset) const {
+size_t StrView::find(char c, size_t offset) const
+{
 	if (offset >= _size)
 		return string::npos;
 	const char *p = static_cast<const char *>(
@@ -120,7 +140,8 @@ size_t StrView::find(char c, size_t offset) const {
  * Ex. "/path/to" from offset 0 with '/'
  *     -> out = "/path", returns 5
  */
-size_t StrView::segmentUntil(char sep, size_t offset, StrView &out) const {
+size_t StrView::segmentUntil(char sep, size_t offset, StrView &out) const
+{
 	if (offset >= _size) {
 		out = StrView(_data + _size, 0);
 		return string::npos;
@@ -131,7 +152,8 @@ size_t StrView::segmentUntil(char sep, size_t offset, StrView &out) const {
 	return next;
 }
 
-vector<StrView> StrView::splitBefore(char c) const {
+vector<StrView> StrView::splitBefore(char c) const
+{
 	vector<StrView> result;
 	size_t offset = 0;
 	StrView seg;
@@ -146,7 +168,8 @@ vector<StrView> StrView::splitBefore(char c) const {
 	return result;
 }
 
-StrView StrView::lastSplit(char c, bool trimPosition) const {
+StrView StrView::lastSplit(char c, splitPosition trimPosition) const
+{
 	size_t offset = 0;
 	while (1) {
 		size_t next = find(c, offset);
@@ -162,12 +185,14 @@ StrView StrView::lastSplit(char c, bool trimPosition) const {
 
 void StrView::printBuffer() const { write(1, _data, _size); }
 
-void StrView::intoStream(std::ostream &os) const {
+void StrView::intoStream(std::ostream &os) const
+{
 	if (_size)
 		os.write(_data, _size);
 }
 
-void StrView::consolidate(char *dest) {
+void StrView::consolidate(char *dest)
+{
 	memcpy(dest, _data, _size);
 	_data = dest;
 }
@@ -175,7 +200,8 @@ void StrView::consolidate(char *dest) {
 void StrView::replace(const string &src) { replace(0, src, src.size()); }
 void StrView::replace(const StrView &src) { replace(0, src, src.size()); }
 void StrView::replace(const StrView &src, size_t len) { replace(0, src, len); }
-void StrView::replace(size_t offset, const StrView &src, size_t len) {
+void StrView::replace(size_t offset, const StrView &src, size_t len)
+{
 	if (offset >= _size)
 		return;
 
