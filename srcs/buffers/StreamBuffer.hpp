@@ -14,5 +14,7 @@ public:
 
 	// Removes and returns the oldest segment. Returns NULL if empty.
 	Segment *popFront();
-	void write(const char *data, size_t len);
+	// Pops oldest segment and returns it to pool.
+	void discardFront();
+	const Segment *peekFront() const;
 };

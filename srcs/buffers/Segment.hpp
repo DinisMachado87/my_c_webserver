@@ -1,11 +1,12 @@
 #pragma once
 
-#include "webServ.hpp"
+#include "BuffersConfig.hpp"
 #include <cstddef>
+#include <sys/types.h>
 
 /* Fixed-size buffer with intrusive linked list pointers,
  * so segments can be chained without external allocations
- * for pointers containers or nodes.
+ * for pointer containers or nodes.
  *
  * Manages its own read/write operations and cursors —
  * callers never touch raw data (returns char * as const). */
@@ -23,7 +24,7 @@ public:
 	void reset();
 	void poison(); // Nulls buffer content.
 
-	/* Data in*/
+	/* Data in */
 	// Reads fd into remaining space. Returns byte count or <= 0 on error/EOF.
 	ssize_t readFrom(ReadFunc fn, int fd);
 	// Copies up to writable() bytes from src. Returns bytes actually copied.
@@ -37,8 +38,10 @@ public:
 
 	// Read-only access
 	const char *data() const;
+
 	size_t readable() const;
 	size_t writable() const;
+	size_t used() const;
 
 private:
 	char _data[RECV_SIZE];

@@ -12,3 +12,11 @@ Segment *StreamBuffer::popFront()
 		return NULL;
 	return pop(_readEnd);
 }
+
+const Segment *StreamBuffer::peekFront() const { return _readEnd; }
+
+void StreamBuffer::discardFront()
+{
+	if (_readEnd)
+		_buffManager.returnBuffers(popFront());
+}

@@ -16,14 +16,13 @@ class SegmentList
 {
 public:
 	// Returns all segments to the pool on destruction.
-	~SegmentList();
+	virtual ~SegmentList();
 
 	size_t totalLen() const;
 	bool empty() const;
 
 	// Appends seg to the write end. seg->_next must be NULL.
 	void pushBack(Segment *seg);
-
 	// Raw pointer — no strlen, for non-terminated buffers.
 	void append(const char *data, size_t len);
 	// String literals implicitly convert to StrView (calls strlen).

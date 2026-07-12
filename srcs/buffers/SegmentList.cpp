@@ -48,7 +48,7 @@ Segment *SegmentList::pop(Segment *seg)
 	else
 		_writeEnd = seg->_prev;
 
-	_totalLen -= seg->readable();
+	_totalLen -= seg->used();
 	seg->reset();
 	return seg;
 }
@@ -63,6 +63,7 @@ void SegmentList::append(const char *data, size_t len)
 			pushBack(seg);
 		}
 		size_t n = _writeEnd->copyIn(data, len);
+		_totalLen += n;
 		data += n;
 		len -= n;
 	}
