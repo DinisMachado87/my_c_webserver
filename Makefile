@@ -1,154 +1,200 @@
-NAME			:= webserver
-NAME_DEBUG		:= $(NAME)_debug
-NAME_TESTS		:= $(NAME)_tests
-CXX				:= c++
-CXX_FLAGS		:= -Wall -Werror -Wextra -std=c++98 -MMD -MP
-TEST_FLAGS		:= -lgtest -lgtest_main -lpthread
-LDFLAGS			:=
-SRC_DIR			:= srcs
-OBJ_DIR			:= obj
+NAME        := webserver
+NAME_DEBUG  := $(NAME)_debug
+NAME_TESTS  := $(NAME)_tests
+CXX         := c++
+CXX_FLAGS   := -Wall -Werror -Wextra -std=c++98 -MMD -MP
+TEST_FLAGS  := -lgtest -lgtest_main -lpthread
+LDFLAGS     :=
+OBJ_DIR     := obj
 
-# Capture filter arguments (e.g., "make debug_test Token SpecificTest")
-CLASS_ARG		:= $(word 2,$(MAKECMDGOALS))
-TEST_ARG		:= $(word 3,$(MAKECMDGOALS))
-# Create gtest filter pattern based on arguments
+# Filter arguments (e.g., "make test Connection SpecificTest")
+CLASS_ARG   := $(word 2,$(MAKECMDGOALS))
+TEST_ARG    := $(word 3,$(MAKECMDGOALS))
 ifdef CLASS_ARG
-  ifdef TEST_ARG
-    FILTER		:= *$(CLASS_ARG)*.$(TEST_ARG)
-  else
-    FILTER		:= *$(CLASS_ARG)*
-  endif
+	ifdef TEST_ARG
+	FILTER  := *$(CLASS_ARG)*.$(TEST_ARG)
 else
-  FILTER		:=
+	FILTER  := *$(CLASS_ARG)*
+endif
 endif
 
-# Source Main
-SRCS_MAIN		:= main.cpp
-SRCS_ENGINE		:= engine Engine.cpp Signals.cpp
-SRCS_SERVER		:= server Server.cpp Location.cpp Overrides.cpp
-SRCS_HTTP		:= http Request.cpp RequestLine.cpp HttpStatus.cpp
-SRCS_HTTP_PARSER:= httpParser RequestLineParser.cpp HttpToken.cpp HttpError.cpp \
-				   HttpParser.cpp HttpHeadersParser.cpp 
-SRCS_RESPONSES	:= responses Response.cpp ERRORResponse.cpp RedirectResponse.cpp \
-				   ResponseHeaders.cpp
-SRCS_PATH		:= path PathConsolidator.cpp RequestPathConsolidator.cpp \
-				   Path.cpp RequestPath.cpp
-SRCS_SOCKET		:= sockets ASocket.cpp Listening.cpp Connection.cpp CGISocketPair.cpp 
-SRCS_PARSER		:= parser Token.cpp Expect.cpp ConfParser.cpp
-SRCS_BUFFERS	:= buffers BufferManager.cpp Segment.cpp SegmentList.cpp \
-				   StackBuffer.cpp StreamBuffer.cpp IOBuffer.cpp 
-SRCS_UTILS		:= utils StrView.cpp Clock.cpp StrViewMap.cpp 
-SRCS_LOGGER		:= logger Logger.cpp 
+# Detect build mode
+IS_DEBUG    := $(filter debug debug_test,$(MAKECMDGOALS))
+IS_TEST     := $(filter test debug_test,$(MAKECMDGOALS))
 
-SRC_GROUPS		:= SRCS_ENGINE SRCS_SERVER SRCS_SOCKET SRCS_PARSER SRCS_UTILS \
-				   SRCS_HTTP SRCS_LOGGER SRCS_PATH SRCS_HTTP_PARSER SRCS_BUFFERS \
-				   SRCS_RESPONSES 
-
-define make_paths
-$(addprefix $(word 1,$(1))/,$(wordlist 2,$(words $(1)),$(1)))
-endef
-
-# Create test file paths from a source group
-define make_test_paths
-$(addprefix $(word 1,$(1))/test_,$(wordlist 2,$(words $(1)),$(1)))
-endef
-
-# Build SRCS_CORE and SRCS_TEST_CORE dynamically from groups
-SRCS_CORE		:= $(foreach group,$(SRC_GROUPS),$(call make_paths,$($(group))))
-
-# If CLASS_ARG is provided, only include matching test files
-ifdef CLASS_ARG
-	SRCS_TEST_CORE	:= $(filter %/test_$(CLASS_ARG).cpp,$(foreach group,$(SRC_GROUPS),$(call make_test_paths,$($(group)))))
-else
-	SRCS_TEST_CORE	:= $(foreach group,$(SRC_GROUPS),$(call make_test_paths,$($(group))))
-endif
-
-# Extract module directories from source groups
-MODULES			:= $(foreach group,$(SRC_GROUPS),$(word 1,$($(group)))) $(ENGINE_DIR) $(UTILS_DIR) $(SOCKETS_DIR) $(LOGGER_DIR) $(PATH_DIR) $(HTTPPARSER_DIR) $(RESPONSES_DIR) $(RESPONSE_DIR) $(BODY_DIR)
-
-# Includes
-INCLUDE_DIRS	:= $(SRC_DIR) $(addprefix $(SRC_DIR)/,$(MODULES))
-INCLUDE_FLAGS	:= $(addprefix -I,$(INCLUDE_DIRS))
-
-# Detect build mode from MAKECMDGOALS
-IS_DEBUG		:= $(filter debug debug_test,$(MAKECMDGOALS))
-IS_TEST			:= $(filter test debug_test,$(MAKECMDGOALS))
-
-# Source configuration
-ifdef IS_TEST
-	SRCS		:= $(SRCS_CORE) $(SRCS_TEST_CORE)
-else
-	SRCS		:= $(SRCS_MAIN) $(SRCS_CORE)
-endif
-
-# Compiler flags
 ifdef IS_DEBUG
-	CXX_FLAGS	+= -ggdb -D_GLIBCXX_DEBUG
+	CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
 endif
-
-# Linker flags
 ifdef IS_TEST
-	LDFLAGS		+= $(TEST_FLAGS)
+	LDFLAGS   += $(TEST_FLAGS)
 endif
-
-# Binary name and object directory
 ifdef IS_TEST
-	NAME		:= $(NAME_TESTS)
-	OBJ_DIR		:= $(OBJ_DIR)_tests$(if $(IS_DEBUG),_debug)
+	OBJ_DIR   := $(OBJ_DIR)_tests$(if $(IS_DEBUG),_debug)
 else ifdef IS_DEBUG
-	NAME		:= $(NAME_DEBUG)
-	OBJ_DIR		:= $(OBJ_DIR)_debug
+	OBJ_DIR   := $(OBJ_DIR)_debug
 endif
 
-OBJS			:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
-DEPS			:= $(OBJS:.o=.d)
+#  Utils (stays a library) 
+UTILS_DIR   := srcs/utils
+UTILS_LIB   := $(UTILS_DIR)/libutils.a
+LIB_TARGET  := $(if $(IS_DEBUG),debug,all)
 
-# Define test run command
+#  Accumulator variables 
+SRCS_ALL      :=
+TEST_SRCS_ALL := 
+MODULES       := 
+INCLUDE_DIRS  := srcs srcs/utils
+
+#  Include module fragments 
+include srcs/buffers/module.mk
+include srcs/httpBody/module.mk
+include srcs/engine/module.mk
+include srcs/server/module.mk
+include srcs/http/module.mk
+include srcs/httpParser/module.mk
+include srcs/responses/module.mk
+include srcs/path/module.mk
+include srcs/sockets/module.mk
+include srcs/parser/module.mk
+include srcs/logger/module.mk
+
+#  Include flags 
+INCLUDE_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
+
+#  Object lists 
+ALL_OBJS      := $(SRCS_ALL:srcs/%.cpp=$(OBJ_DIR)/%.o)
+ALL_TEST_OBJS := $(TEST_SRCS_ALL:srcs/%.cpp=$(OBJ_DIR)/%.o)
+MAIN_OBJ      := $(OBJ_DIR)/main.o
+
+#  Test filtering 
+ifdef CLASS_ARG
+	ACTIVE_TEST_OBJS := $(filter %/test_$(CLASS_ARG).o,$(ALL_TEST_OBJS))
+else
+	ACTIVE_TEST_OBJS := $(ALL_TEST_OBJS)
+endif
+
+#  Select binary name 
+ifdef IS_TEST
+	NAME    := $(NAME_TESTS)
+else ifdef IS_DEBUG
+	NAME    := $(NAME_DEBUG)
+endif
+
+#  Compile rules 
+define module_rule
+$(OBJ_DIR)/$(1)/%.o: srcs/$(1)/%.cpp
+	@mkdir -p $$(dir $$@)
+	$$(CXX) $$(CXX_FLAGS) $$(INCLUDE_FLAGS) -c $$< -o $$@
+endef
+
+$(foreach mod,$(MODULES),$(eval $(call module_rule,$(mod))))
+
+$(MAIN_OBJ): srcs/main.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+
+#  Dependencies 
+DEPS := $(ALL_OBJS:.o=.d) $(ALL_TEST_OBJS:.o=.d) $(MAIN_OBJ:.o=.d)
+-include $(DEPS)
+
+#  Test runner 
 define run_tests
-	@if [ -z "$(FILTER)" ]; then \
-		$(1) ./$(NAME) --gtest_break_on_failure; \
+@if [ -z "$(FILTER)" ]; then \
+	$(1) ./$(NAME) gtest_break_on_failure; \
 	else \
-		echo "Running tests matching: $(FILTER)"; \
-		$(1) ./$(NAME) --gtest_filter=$(FILTER) --gtest_break_on_failure; \
+	echo "Running tests matching: $(FILTER)"; \
+	$(1) ./$(NAME) gtest_filter=$(FILTER) gtest_break_on_failure; \
 	fi
 endef
 
-# Rules
-all: $(NAME)
+#  Utils library 
+$(UTILS_LIB):
+	$(MAKE) -C $(UTILS_DIR) $(LIB_TARGET)
 
+#  Main targets 
+all: $(NAME)
 debug: $(NAME)
 
+$(NAME): $(if $(IS_TEST),$(ALL_OBJS) $(ACTIVE_TEST_OBJS),$(MAIN_OBJ) $(ALL_OBJS)) $(UTILS_LIB)
+	$(CXX) $(CXX_FLAGS) $^ $(LDFLAGS) -o $@
+
+#  Full test targets 
 test: $(NAME)
 	$(call run_tests,)
 
 debug_test: $(NAME)
-	$(call run_tests,gdb --args)
+	$(call run_tests,gdb args)
 
-$(NAME): $(OBJS)
-	$(CXX) $(CXX_FLAGS) $(OBJS) $(LDFLAGS) -o $(NAME)
+#  Per-module test targets 
+buffers_tests: $(BUFFERS_OBJS) $(BUFFERS_TEST_OBJS) $(UTILS_LIB)
+	$(CXX) $(CXX_FLAGS) $^ $(TEST_FLAGS) -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+body_tests: $(BODY_OBJS) $(BODY_TEST_OBJS) $(BUFFERS_OBJS) $(UTILS_LIB)
+	$(CXX) $(CXX_FLAGS) $^ $(TEST_FLAGS) -o $@
 
--include $(DEPS)
+#  Per-module test runners 
+buffersTest: buffers_tests
+	@if [ -z "$(FILTER)" ]; then \
+		./buffers_tests --gtest_break_on_failure; \
+	else \
+		echo "Running tests matching: $(FILTER)"; \
+		./buffers_tests --gtest_filter=$(FILTER) --gtest_break_on_failure; \
+	fi
 
+bodyTest: body_tests
+	@if [ -z "$(FILTER)" ]; then \
+		./body_tests --gtest_break_on_failure; \
+	else \
+		echo "Running tests matching: $(FILTER)"; \
+		./body_tests --gtest_filter=$(FILTER) --gtest_break_on_failure; \
+	fi
+
+buffersDebugTest: CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
+buffersDebugTest: buffers_tests
+	$(call run_tests,gdb args)
+
+bodyDebugTest: CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
+bodyDebugTest: body_tests
+	$(call run_tests,gdb args)
+
+#  Libraries 
+utilsTest:
+	$(MAKE) -C $(UTILS_DIR) test $(CLASS_ARG) $(TEST_ARG)
+
+utilsDebugTest:
+	$(MAKE) -C $(UTILS_DIR) debug_test $(CLASS_ARG) $(TEST_ARG)
+
+#  Bear 
+bear:
+	bear  $(MAKE) re
+	bear append  $(MAKE) -C $(UTILS_DIR) re
+
+#  Clean 
 clean:
 	rm -rf obj obj_debug obj_tests obj_tests_debug
+	$(MAKE) -C $(UTILS_DIR) clean
 
 fclean: clean
-	rm -f $(NAME) $(NAME_DEBUG) $(NAME_TESTS)
+	rm -f webserver webserver_debug webserver_tests \
+		buffers_tests body_tests
+	$(MAKE) -C $(UTILS_DIR) fclean
 
 re: fclean all
 
-# Dummy targets for filter arguments
+#  Dummy targets for filter arguments 
 ifdef CLASS_ARG
-$(CLASS_ARG):
-	@:
-endif
-ifdef TEST_ARG
+	$(CLASS_ARG):
+@:
+	endif
+	ifdef TEST_ARG
 $(TEST_ARG):
 	@:
 endif
 
-.PHONY: all debug test debug_test clean fclean re
+.PHONY: all debug clean fclean re \
+	test debug_test \
+	buffers_tests body_tests \
+	buffersTest bodyTest \
+	buffersDebugTest bodyDebugTest \
+	utilsTest utilsDebugTest \
+	bear
