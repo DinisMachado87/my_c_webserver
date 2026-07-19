@@ -5,7 +5,7 @@
 #include <vector>
 
 /* Pool allocator for Segments. Allocates in slabs (8, 16, 32, ...)
- * and recycles via an intrusive free list to minimise malloc calls.*/
+ * and recycles via an intrusive free list to minimise malloc calls. */
 class BufferManager
 {
 public:
@@ -13,15 +13,14 @@ public:
 	~BufferManager();
 
 	// Returns a reset segment for use. Allocates new slab if pool empty.
-	Segment *getBuffer();
+	Segment *getSegment();
 
-	// Returns Segments to pool - follows _next chain, resets and poisons.
-	// Callers don't need to unlink segments first.
+	// Resets + poisons one seg, pushes to free list.
 	// Always returns NULL for 1 line reassignement of caller.
-	Segment *returnBuffers(Segment *buffersHead);
+	Segment *returnSegment(Segment *seg);
 
 private:
-	std::vector<Segment *> _slabAllocations;
+	std::vector<Segment *> _slabs;
 	Segment *_buffers;
 	size_t _multiplier;
 

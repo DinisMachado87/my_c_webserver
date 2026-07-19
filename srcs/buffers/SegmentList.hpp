@@ -1,54 +1,44 @@
 #pragma once
 
-#include "BufferManager.hpp"
-#include "StrView.hpp"
 #include <cstddef>
 
-/* Doubly-linked list of Segments. Tracks cumulative totalLen.
- * Segments are accessed only by popping — never expose a raw Segment*
- * to callers, to prevent cross-linking between lists.
- *
- * NOT INSTANTIABLE DIRECTLY
- * use:
- * - StreamBuffer for FIFO consumption (see IOBuffer for fd read/write)
- * - StackBuffer for LIFO consumption */
+class BufferManager;
+class Segment;
+
+/* Doubly-linked list of Segments. Thin endpoint bookkeeping over
+ * Segment link primitives. Borrows from a BufferManager, returns every
+ * held segment in clear() — no caller drain step.
+ * _recycleStack holds fully-sent segments for reuse without re-poison. */
 class SegmentList
 {
 public:
-	// Returns all segments to the pool on destruction.
-	virtual ~SegmentList();
+	/* Constructors */
+	explicit SegmentList(BufferManager &segmentPool);
+	~SegmentList();
 
-	size_t totalLen() const;
-	bool empty() const;
+	/* Methods */
+	void reset();
+	void drain(Segment *seg);
 
-	// Appends seg to the write end. seg->_next must be NULL.
-	void pushBack(Segment *seg);
-	// Raw pointer — no strlen, for non-terminated buffers.
-	void append(const char *data, size_t len);
-	// String literals implicitly convert to StrView (calls strlen).
-	void append(const StrView &sv);
+	void pushTail(Segment *seg);
+	void pushHead(Segment *seg);
+	Segment *popHead();
+	Segment *popTail();
 
 private:
-	// Explicit disables
+	/* State */
+	BufferManager &_segmentPool;
+	Segment *_head;
+	Segment *_tail;
+	Segment *_recycleStack;
+
+	/* Recycle stack Methods */
+	void clear();
+	void clearCursors();
+	void pushStack(Segment *seg);
+	Segment *popStack();
+
+	/* Explicit disables */
 	SegmentList &operator=(const SegmentList &other);
 	SegmentList(const SegmentList &other);
-
-protected:
-	// disable direct instantiation - only called by inheritance
-	SegmentList(BufferManager &buffManager);
-
-	BufferManager &_buffManager;
-	Segment *_readEnd;
-	Segment *_writeEnd;
-	size_t _totalLen;
-
-	// Unlinks seg from the list and returns it.
-	// Caller is responsible for returning it to BufferManager.
-	Segment *pop(Segment *seg);
-};
-
-inline SegmentList &operator<<(SegmentList &out, const StrView &sv)
-{
-	out.append(sv);
-	return out;
 };

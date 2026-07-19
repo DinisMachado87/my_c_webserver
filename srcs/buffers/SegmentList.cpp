@@ -1,72 +1,122 @@
 #include "SegmentList.hpp"
+#include "BufferManager.hpp"
+#include "Segment.hpp"
 #include <cassert>
 
-SegmentList::SegmentList(BufferManager &buffManager) :
-	_buffManager(buffManager),
-	_readEnd(NULL),
-	_writeEnd(NULL),
-	_totalLen(0)
+SegmentList::SegmentList(BufferManager &segmentPool) :
+	_segmentPool(segmentPool),
+	_head(NULL),
+	_tail(NULL),
+	_recycleStack(NULL)
 {
 }
 
 SegmentList::~SegmentList()
 {
-	while (_readEnd)
-		_buffManager.returnBuffers(pop(_readEnd));
+	clear();
 }
 
-void SegmentList::pushBack(Segment *seg)
-{
-	assert(seg && "pushBack: NULL segment");
-	assert(!seg->_next && "pushBack: seg still linked (_next)");
-	assert(!seg->_prev && "pushBack: seg still linked (_prev)");
+/* Methods */
 
-	_totalLen += seg->readable();
-	seg->_next = NULL;
-	if (!_writeEnd) {
-		seg->_prev = NULL;
-		_readEnd = seg;
-		_writeEnd = seg;
-	} else {
-		_writeEnd->_next = seg;
-		seg->_prev = _writeEnd;
-		_writeEnd = seg;
+// Walk main chain then recycle stack, return every seg to pool, null endpoints.
+// Return whole _next chain to pool. Reads raw links — inside friend boundary.
+void SegmentList::drain(Segment *seg)
+{
+	while (seg) {
+		Segment *next = seg->_next;
+		_segmentPool.returnSegment(seg);
+		seg = next;
 	}
 }
 
-Segment *SegmentList::pop(Segment *seg)
+void SegmentList::clear()
 {
-	assert(seg && "pop: NULL segment");
+	drain(_head);
+	drain(_recycleStack);
+	_head = NULL;
+	_tail = NULL;
+	_recycleStack = NULL;
+}
 
-	if (seg->_prev)
-		seg->_prev->_next = seg->_next;
+void SegmentList::pushTail(Segment *seg)
+{
+	assert(seg);
+	if (_tail)
+		_tail->linkNext(seg);
 	else
-		_readEnd = seg->_next;
+		_head = seg;
+	_tail = seg;
+}
 
-	if (seg->_next)
-		seg->_next->_prev = seg->_prev;
+void SegmentList::pushHead(Segment *seg)
+{
+	assert(seg);
+	if (seg->allSent()) {
+		pushStack(seg);
+		return;
+	}
+	if (_head)
+		_head->linkPrev(seg);
 	else
-		_writeEnd = seg->_prev;
+		_tail = seg;
+	_head = seg;
+}
 
-	_totalLen -= seg->used();
-	seg->reset();
+Segment *SegmentList::popHead()
+{
+	Segment *seg = _head;
+	if (!seg)
+		return NULL;
+	_head = seg->_next;
+	seg->unlink();
+	if (!_head)
+		_tail = NULL;
 	return seg;
 }
-size_t SegmentList::totalLen() const { return _totalLen; }
-bool SegmentList::empty() const { return _readEnd == NULL; }
 
-void SegmentList::append(const char *data, size_t len)
+Segment *SegmentList::popTail()
 {
-	while (len > 0) {
-		if (!_writeEnd || _writeEnd->writable() == 0) {
-			Segment *seg = _buffManager.getBuffer();
-			pushBack(seg);
-		}
-		size_t n = _writeEnd->copyIn(data, len);
-		_totalLen += n;
-		data += n;
-		len -= n;
-	}
+	Segment *seg = _tail;
+	if (!seg)
+		return NULL;
+	_tail = seg->_prev;
+	seg->unlink();
+	if (!_tail)
+		_head = NULL;
+	return seg;
 }
 
-void SegmentList::append(const StrView &sv) { append(sv.data(), sv.size()); }
+/* Recycle stack — singly-linked via _next, LIFO */
+
+// Push seg onto recycle stack, cursors zeroed. LIFO via _next, no _prev.
+void SegmentList::pushStack(Segment *seg)
+{
+	assert(seg);
+	seg->clearCursors();
+	seg->_next = _recycleStack;
+	_recycleStack = seg;
+}
+
+Segment *SegmentList::popStack()
+{
+	Segment *seg = _recycleStack;
+	if (!seg)
+		return NULL;
+	_recycleStack = seg->_next;
+	seg->unlink();
+	return seg;
+}
+
+// Move all Segments from list to stack with cursors reset.
+void SegmentList::reset()
+{
+	Segment *seg = _head;
+	while (seg) {
+		Segment *next = seg->_next;
+		pushStack(seg);
+		seg = next;
+	}
+	_head = NULL;
+	_tail = NULL;
+}
+

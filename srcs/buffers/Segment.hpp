@@ -1,50 +1,59 @@
 #pragma once
 
-#include "BuffersConfig.hpp"
+#include "webServ.hpp"
+#include "StrView.hpp"
 #include <cstddef>
 #include <sys/types.h>
 
-/* Fixed-size buffer with intrusive linked list pointers,
- * so segments can be chained without external allocations
- * for pointer containers or nodes.
- *
- * Manages its own read/write operations and cursors —
- * callers never touch raw data (returns char * as const). */
+// Forward declaration: Segment owns its cursors, so it drives the syscall
+// itself. Reader/Writer never include Segment — reference is one-directional.
+class Reader;
+class Writer;
+
+class BufferManager;
+class SegmentList;
+
+/* Fixed-size buffer with intrusive links — chains without
+ * allocating. Owns its cursors, exposes views not raw data.
+ * Links + ctor private: only pool and list can build/splice. */
 class Segment
 {
-public:
-	typedef ssize_t (*ReadFunc)(int, void *, size_t);
-	typedef ssize_t (*WriteFunc)(int, const void *, size_t);
-
+private:
+	/* State */
+	char _data[RECV_SIZE];
+	size_t _written;
+	size_t _sent;
 	Segment *_prev;
 	Segment *_next;
 
+	// Only friends can build and link
+	friend class SegmentList;
+	friend class BufferManager;
+	/* Constructors */
 	Segment();
+	/* Link primitives — patch neighbors, never touch list endpoints */
+	void linkNext(Segment *node);
+	void linkPrev(Segment *node);
+	void unlink();
+	void clearCursors();
 
+public:
+	/* Methods */
 	void reset();
-	void poison(); // Nulls buffer content.
+	void poison();
 
-	/* Data in */
-	// Reads fd into remaining space. Returns byte count or <= 0 on error/EOF.
-	ssize_t readFrom(ReadFunc fn, int fd);
-	// Copies up to writable() bytes from src. Returns bytes actually copied.
+	ssize_t readFrom(const Reader &reader);
+	// Returns bytes copied, truncated to writable().
 	size_t copyIn(const char *src, size_t len);
 
-	/* Data out */
-	// Writes unsent data to fd. Returns byte count or <= 0 on error.
-	ssize_t sendTo(WriteFunc fn, int fd);
-	// True when all readable data has been sent.
+	ssize_t sendTo(const Writer &writer);
 	bool allSent() const;
 
-	// Read-only access
-	const char *data() const;
+	StrView writtenView() const;
+	StrView unsentView() const;
+	StrView lastWritten(size_t n) const;
 
 	size_t readable() const;
 	size_t writable() const;
 	size_t used() const;
-
-private:
-	char _data[RECV_SIZE];
-	size_t _usedLen;
-	size_t _sent;
 };

@@ -1,7 +1,5 @@
 BUFFERS_SRCS := BufferManager.cpp SegmentList.cpp Segment.cpp \
-                StackBuffer.cpp StreamBuffer.cpp \
-                Reader.cpp Writer.cpp \
-                IBuffer.cpp IOBuffer.cpp OBuffer.cpp
+                Reader.cpp Writer.cpp
 
 BUFFERS_TEST_SRCS := $(notdir $(wildcard srcs/buffers/test_*.cpp))
 
