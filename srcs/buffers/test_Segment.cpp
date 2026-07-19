@@ -1,166 +1,176 @@
+#include "BufferManager.hpp"
+#include "Reader.hpp"
 #include "Segment.hpp"
+#include "Writer.hpp"
+#include "webServ.hpp"
 #include <cstring>
 #include <gtest/gtest.h>
+#include <string>
+#include <unistd.h>
 
-// Fakes
-static ssize_t fakeRead(int, void *buf, size_t len)
-{
-	if (len > 5)
-		len = 5;
-	std::memcpy(buf, "hello", len);
-	return len;
-}
-
-static ssize_t fakeReadFail(int, void *, size_t) { return -1; }
-
-static char g_sendBuf[RECV_SIZE];
-static size_t g_sendLen;
-
-static ssize_t fakeSend(int, const void *buf, size_t len)
-{
-	std::memcpy(g_sendBuf, buf, len);
-	g_sendLen = len;
-	return len;
-}
-
+/* SegmentTest */
+// Segment constructor is private (pool-owned). Build through BufferManager.
 class SegmentTest : public ::testing::Test
 {
 protected:
-	Segment seg;
+	BufferManager pool;
+	Segment *seg;
+	// SetUp is gtest's hook — exact name matters, no override in C++98 to catch
+	// a typo.
+	void SetUp() { seg = pool.getSegment(); }
 
-	void SetUp()
+	// Assert view holds exactly n bytes matching src.
+	void expectBytes(StrView v, const char *src, size_t n)
 	{
-		g_sendLen = 0;
-		std::memset(g_sendBuf, 0, sizeof(g_sendBuf));
+		ASSERT_EQ(v.size(), n);
+		EXPECT_EQ(std::memcmp(v.data(), src, n), 0);
 	}
 };
 
-// --- Fresh state ---
-
-TEST_F(SegmentTest, FreshSegmentIsEmpty)
+TEST_F(SegmentTest, CopyInWritesActualBytes)
 {
-	EXPECT_EQ(seg.readable(), 0u);
-	EXPECT_EQ(seg.writable(), static_cast<size_t>(RECV_SIZE));
-	EXPECT_TRUE(seg._prev == NULL);
-	EXPECT_TRUE(seg._next == NULL);
-	EXPECT_TRUE(seg.allSent());
+	const char *src = "hello world";
+	size_t n = seg->copyIn(src, 11);
+	ASSERT_EQ(n, 11u);
+	expectBytes(seg->writtenView(), src, 11);
 }
 
-// --- copyIn ---
-
-TEST_F(SegmentTest, CopyInWritesData)
+TEST_F(SegmentTest, CopyInTruncatesToWritable)
 {
-	size_t n = seg.copyIn("hello", 5);
-	EXPECT_EQ(n, 5u);
-	EXPECT_EQ(seg.readable(), 5u);
-	EXPECT_EQ(seg.writable(), static_cast<size_t>(RECV_SIZE) - 5u);
-	EXPECT_EQ(std::memcmp(seg.data(), "hello", 5), 0);
+	std::string big(RECV_SIZE + 100, 'x');
+	size_t n = seg->copyIn(big.data(), big.size());
+	ASSERT_EQ(n, static_cast<size_t>(RECV_SIZE));
+	ASSERT_EQ(seg->writable(), 0u);
+	expectBytes(seg->writtenView(), big.data(), RECV_SIZE);
 }
 
-TEST_F(SegmentTest, CopyInAccumulates)
+TEST_F(SegmentTest, CopyInResumeAccumulatesOrdered)
 {
-	seg.copyIn("aaa", 3);
-	seg.copyIn("bb", 2);
-	EXPECT_EQ(seg.readable(), 5u);
-	EXPECT_EQ(std::memcmp(seg.data(), "aaabb", 5), 0);
+	seg->copyIn("abc", 3);
+	seg->copyIn("def", 3);
+	expectBytes(seg->writtenView(), "abcdef", 6);
 }
 
-TEST_F(SegmentTest, CopyInClampsAtCapacity)
+TEST_F(SegmentTest, LastWrittenContent)
 {
-	char big[RECV_SIZE + 100];
-	std::memset(big, 'X', sizeof(big));
-	size_t n = seg.copyIn(big, sizeof(big));
-	EXPECT_EQ(n, static_cast<size_t>(RECV_SIZE));
-	EXPECT_EQ(seg.readable(), static_cast<size_t>(RECV_SIZE));
-	EXPECT_EQ(seg.writable(), 0u);
+	seg->copyIn("abcdef", 6);
+	expectBytes(seg->lastWritten(3), "def", 3);
 }
 
-TEST_F(SegmentTest, CopyInToFullSegmentReturnsZero)
+TEST_F(SegmentTest, AllSentExactBoundary)
 {
-	char fill[RECV_SIZE];
-	std::memset(fill, 'A', RECV_SIZE);
-	seg.copyIn(fill, RECV_SIZE);
-	EXPECT_EQ(seg.copyIn("x", 1), 0u);
+	seg->copyIn("ab", 2);
+	EXPECT_FALSE(seg->allSent());
 }
 
-// --- readFrom ---
-
-TEST_F(SegmentTest, ReadFromFillsSegment)
+/* Reader path — real pipe */
+class SegmentPipeTest : public ::testing::Test
 {
-	ssize_t n = seg.readFrom(fakeRead, 0);
-	EXPECT_EQ(n, 5);
-	EXPECT_EQ(seg.readable(), 5u);
-	EXPECT_EQ(std::memcmp(seg.data(), "hello", 5), 0);
+protected:
+	BufferManager pool;
+	Segment *seg;
+	int fds[2];
+	// SetUp is gtest's hook — exact name matters, no override in C++98 to catch
+	// a typo.
+	void SetUp()
+	{
+		ASSERT_EQ(pipe(fds), 0);
+		seg = pool.getSegment();
+	}
+	void TearDown()
+	{
+		if (fds[0] != -1)
+			close(fds[0]);
+		if (fds[1] != -1)
+			close(fds[1]);
+	}
+
+	// Write n bytes into the pipe's write end, assert full write.
+	void writePipe(const char *src, size_t n)
+	{
+		ASSERT_EQ(write(fds[1], src, n), static_cast<ssize_t>(n));
+	}
+
+	// Read n bytes from pipe's read end into buf, assert full read.
+	// Blocks if fewer than n buffered — only safe when writer put >= n first.
+	void readPipe(char *buf, size_t n)
+	{
+		ASSERT_EQ(read(fds[0], buf, n), static_cast<ssize_t>(n));
+	}
+
+	// Assert view holds exactly n bytes matching src.
+	void expectBytes(StrView v, const char *src, size_t n)
+	{
+		ASSERT_EQ(v.size(), n);
+		EXPECT_EQ(std::memcmp(v.data(), src, n), 0);
+	}
+};
+
+TEST_F(SegmentPipeTest, ReadFromReads)
+{
+	const char *src = "piped";
+	writePipe(src, 5);
+	Reader reader(Reader::FILE, fds[0]);
+	ssize_t bytesRead = seg->readFrom(reader);
+	ASSERT_EQ(bytesRead, 5);
+	expectBytes(seg->writtenView(), src, 5);
 }
 
-TEST_F(SegmentTest, ReadFromFailureDoesNotAdvance)
+TEST_F(SegmentPipeTest, SecondReadFromAppends)
 {
-	ssize_t n = seg.readFrom(fakeReadFail, 0);
-	EXPECT_EQ(n, -1);
-	EXPECT_EQ(seg.readable(), 0u);
+	Reader reader(Reader::FILE, fds[0]);
+	writePipe("aaa", 3);
+	seg->readFrom(reader);
+	writePipe("bbb", 3);
+	seg->readFrom(reader);
+	expectBytes(seg->writtenView(), "aaabbb", 6);
 }
 
-// --- sendTo ---
-
-TEST_F(SegmentTest, SendToWritesData)
+TEST_F(SegmentPipeTest, ReadFromFullSegNoSyscall)
 {
-	seg.copyIn("hello", 5);
-	ssize_t n = seg.sendTo(fakeSend, 0);
-	EXPECT_EQ(n, 5);
-	EXPECT_EQ(g_sendLen, 5u);
-	EXPECT_EQ(std::memcmp(g_sendBuf, "hello", 5), 0);
-	EXPECT_TRUE(seg.allSent());
+	std::string big(RECV_SIZE, 'x');
+	seg->copyIn(big.data(), RECV_SIZE);
+	ASSERT_EQ(seg->writable(), 0u);
+	Reader reader(Reader::FILE, fds[0]);
+	writePipe("yyy", 3);
+	ssize_t bytesRead = seg->readFrom(reader);
+	EXPECT_EQ(bytesRead, 0);
+	expectBytes(seg->writtenView(), big.data(), RECV_SIZE);
 }
 
-TEST_F(SegmentTest, AllSentTracksPartialSend)
+TEST_F(SegmentPipeTest, ReadFromClosedFd)
 {
-	seg.copyIn("hello", 5);
-	EXPECT_FALSE(seg.allSent());
-
-	// Partial send — only 3 bytes
-	seg.sendTo(fakeSend, 0); // sends all 5 in our fake, so use a partial fake:
-	// Better: test with copyIn of enough data that fakeSend won't drain it
+	close(fds[0]);
+	fds[0] = -1;
+	Reader reader(Reader::FILE, fds[0]);
+	ssize_t bytesRead = seg->readFrom(reader);
+	EXPECT_LT(bytesRead, 0);
 }
 
-TEST_F(SegmentTest, AllSentAfterFullDrain)
+TEST_F(SegmentPipeTest, SendToDrainsOrdered)
 {
-	seg.copyIn("hi", 2);
-	EXPECT_FALSE(seg.allSent());
-	seg.sendTo(fakeSend, 0);
-	EXPECT_TRUE(seg.allSent());
+	seg->copyIn("sendme", 6);
+	Writer writer(Writer::FILE, fds[1]);
+	ASSERT_EQ(seg->sendTo(writer), 6);
+	char buf[16];
+	readPipe(buf, 6);
+	expectBytes(StrView(buf, 6), "sendme", 6);
 }
 
-// --- reset ---
-
-TEST_F(SegmentTest, ResetRestoresInitialState)
+// Full drain only — pipe accepts all 6 at once, can't force short write here.
+TEST_F(SegmentPipeTest, SendToEmptiesBufferWhenSpace)
 {
-	seg._prev = &seg;
-	seg._next = &seg;
-	seg.copyIn("data", 4);
-	seg.sendTo(fakeSend, 0);
-
-	seg.reset();
-
-	EXPECT_EQ(seg.readable(), 0u);
-	EXPECT_EQ(seg.writable(), static_cast<size_t>(RECV_SIZE));
-	EXPECT_TRUE(seg._prev == NULL);
-	EXPECT_TRUE(seg._next == NULL);
-	EXPECT_TRUE(seg.allSent());
+	seg->copyIn("abcdef", 6);
+	Writer writer(Writer::FILE, fds[1]);
+	seg->sendTo(writer);
+	char buf[16];
+	readPipe(buf, 6);
+	EXPECT_EQ(seg->unsentView().size(), 0u);
 }
 
-// --- poison ---
-
-TEST_F(SegmentTest, PoisonFillsBuffer)
+TEST_F(SegmentPipeTest, SendToEmptyNoSyscall)
 {
-	seg.copyIn("hello", 5);
-	seg.poison();
-#ifdef DEBUG
-	unsigned char expected = 0xDE;
-#else
-	unsigned char expected = 0x00;
-#endif
-	const unsigned char *p
-		= reinterpret_cast<const unsigned char *>(seg.data());
-	for (size_t i = 0; i < 5; i++)
-		EXPECT_EQ(p[i], expected) << "Mismatch at byte " << i;
+	Writer writer(Writer::FILE, fds[1]);
+	ssize_t bytesSent = seg->sendTo(writer);
+	EXPECT_EQ(bytesSent, 0);
 }

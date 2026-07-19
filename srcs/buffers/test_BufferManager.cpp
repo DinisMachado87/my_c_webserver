@@ -1,95 +1,72 @@
 #include "BufferManager.hpp"
 #include "Segment.hpp"
+#include "webServ.hpp"
+#include <cstring>
 #include <gtest/gtest.h>
-#include <set>
+#include <vector>
 
 class BufferManagerTest : public ::testing::Test
 {
 protected:
-	BufferManager bm;
+	BufferManager pool;
 };
 
-TEST_F(BufferManagerTest, GetBufferReturnsNonNull)
+TEST_F(BufferManagerTest, GetSegmentUsable)
 {
-	Segment *seg = bm.getBuffer();
+	Segment *seg = pool.getSegment();
 	ASSERT_TRUE(seg != NULL);
+	seg->copyIn("ok", 2);
+	StrView v = seg->writtenView();
+	EXPECT_EQ(std::memcmp(v.data(), "ok", 2), 0);
 }
 
-TEST_F(BufferManagerTest, GetBufferReturnsResetSegment)
+TEST_F(BufferManagerTest, PoolReuseSamePointer)
 {
-	Segment *seg = bm.getBuffer();
-	EXPECT_EQ(seg->readable(), 0u);
-	EXPECT_TRUE(seg->_prev == NULL);
-	EXPECT_TRUE(seg->_next == NULL);
-	EXPECT_TRUE(seg->allSent());
+	Segment *first = pool.getSegment();
+	pool.returnSegment(first);
+	Segment *second = pool.getSegment();
+	EXPECT_EQ(first, second); // exact seg recycled
 }
 
-TEST_F(BufferManagerTest, GetBufferTwiceReturnsDifferentPointers)
+TEST_F(BufferManagerTest, ReturnedSegCursorRewound)
 {
-	Segment *a = bm.getBuffer();
-	Segment *b = bm.getBuffer();
-	EXPECT_NE(a, b);
+	Segment *seg = pool.getSegment();
+	seg->copyIn("data", 4);
+	pool.returnSegment(seg);
+	Segment *back = pool.getSegment();
+	EXPECT_EQ(back->used(), 0u); // reset ran on return
 }
 
-TEST_F(BufferManagerTest, ReturnedBufferIsReused)
+TEST_F(BufferManagerTest, ReturnSegmentReturnsNull)
 {
-	Segment *first = bm.getBuffer();
-	bm.returnBuffers(first);
-	Segment *second = bm.getBuffer();
-	EXPECT_EQ(first, second);
+	Segment *seg = pool.getSegment();
+	EXPECT_TRUE(pool.returnSegment(seg) == NULL);
 }
 
-TEST_F(BufferManagerTest, ReturnedBufferIsClean)
+TEST_F(BufferManagerTest, AllocateOnEmptyPool)
 {
-	Segment *seg = bm.getBuffer();
-	seg->copyIn("dirty", 5);
-	bm.returnBuffers(seg);
-
-	Segment *reused = bm.getBuffer();
-	EXPECT_EQ(reused->readable(), 0u);
-	EXPECT_TRUE(reused->_prev == NULL);
-	EXPECT_TRUE(reused->_next == NULL);
+	std::vector<Segment *> held;
+	for (size_t i = 0; i < SLAB_START_SIZE; ++i)
+		held.push_back(pool.getSegment());
+	Segment *extra = pool.getSegment(); // pool empty -> allocate
+	ASSERT_TRUE(extra != NULL);
+	for (size_t i = 0; i < held.size(); ++i)
+		ASSERT_NE(extra, held[i]); // distinct: fresh slab
+	extra->copyIn("z", 1);
+	EXPECT_EQ(extra->writtenView().data()[0], 'z');
 }
 
-TEST_F(BufferManagerTest, ReturnNullDoesNotCrash)
+TEST_F(BufferManagerTest, SlabDoublingAllDistinctUsable)
 {
-	EXPECT_TRUE(bm.returnBuffers(NULL) == NULL);
-}
-
-TEST_F(BufferManagerTest, SlabGrowthBeyondInitialBatch)
-{
-	std::set<Segment *> seen;
-	for (int i = 0; i < 25; i++) { // 25 > (first alocation = 8) + (second = 16)
-		Segment *seg = bm.getBuffer();
-		ASSERT_TRUE(seg != NULL) << "Failed on allocation " << i;
-		EXPECT_TRUE(seen.find(seg) == seen.end())
-			<< "Duplicate on allocation " << i;
-		seen.insert(seg);
+	std::vector<Segment *> held;
+	for (size_t i = 0; i < SLAB_START_SIZE * 3; ++i) {
+		Segment *s = pool.getSegment();
+		ASSERT_TRUE(s != NULL);
+		for (size_t j = 0; j < held.size(); ++j)
+			ASSERT_NE(s, held[j]); // no aliasing across slabs
+		s->copyIn("v", 1);
+		held.push_back(s);
 	}
-}
-
-TEST_F(BufferManagerTest, ReturnBuffersReturnsChain)
-{
-	Segment *a = bm.getBuffer();
-	Segment *b = bm.getBuffer();
-	Segment *c = bm.getBuffer();
-
-	a->_next = b;
-	b->_next = c;
-	c->_next = NULL;
-
-	bm.returnBuffers(a);
-
-	std::set<Segment *> original;
-	original.insert(a);
-	original.insert(b);
-	original.insert(c);
-
-	for (int i = 0; i < 3; i++) {
-		Segment *seg = bm.getBuffer();
-		EXPECT_TRUE(original.find(seg) != original.end())
-			<< "Unexpected pointer on retrieval " << i;
-		original.erase(seg);
-	}
-	EXPECT_TRUE(original.empty());
+	for (size_t i = 0; i < held.size(); ++i)
+		EXPECT_EQ(held[i]->writtenView().data()[0], 'v');
 }

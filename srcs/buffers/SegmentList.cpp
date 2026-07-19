@@ -11,10 +11,7 @@ SegmentList::SegmentList(BufferManager &segmentPool) :
 {
 }
 
-SegmentList::~SegmentList()
-{
-	clear();
-}
+SegmentList::~SegmentList() { clear(); }
 
 /* Methods */
 
@@ -64,26 +61,30 @@ void SegmentList::pushHead(Segment *seg)
 
 Segment *SegmentList::popHead()
 {
-	Segment *seg = _head;
-	if (!seg)
+	if (!_head)
 		return NULL;
-	_head = seg->_next;
-	seg->unlink();
+
+	Segment *returnSeg = _head;
+	_head = _head->_next;
 	if (!_head)
 		_tail = NULL;
-	return seg;
+
+	returnSeg->unlink();
+	return returnSeg;
 }
 
 Segment *SegmentList::popTail()
 {
-	Segment *seg = _tail;
-	if (!seg)
+	if (!_tail)
 		return NULL;
-	_tail = seg->_prev;
-	seg->unlink();
+
+	Segment *returnSeg = _tail;
+	_tail = _tail->_prev;
 	if (!_tail)
 		_head = NULL;
-	return seg;
+
+	returnSeg->unlink();
+	return returnSeg;
 }
 
 /* Recycle stack — singly-linked via _next, LIFO */
@@ -119,4 +120,3 @@ void SegmentList::reset()
 	_head = NULL;
 	_tail = NULL;
 }
-

@@ -8,6 +8,8 @@
 class Writer
 {
 public:
+	Writer();
+
 	/* State */
 	enum fdType { SOCKET, FILE };
 
@@ -19,8 +21,6 @@ public:
 	ssize_t writeOne(const void *buf, size_t len) const;
 
 private:
-	Writer();
-
 	/* State */
 	const fdType _fdType;
 	const int _fd;
