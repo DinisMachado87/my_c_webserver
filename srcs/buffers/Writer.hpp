@@ -4,14 +4,15 @@
 
 /* Owns the write-side syscall choice for a buffer. One instance per
  * out-capable buffer. Kind fixed at construction. single() writes one
- * contiguous span; gather() writes caller-built iovec sections. */
+ * contiguous span; gather() writes caller-built iovec sections.
+ * NONE: no out fd (read-only/drain buffer) */
 class Writer
 {
 public:
 	Writer();
 
 	/* State */
-	enum fdType { SOCKET, FILE };
+	enum fdType { SOCKET, FILE, NONE };
 
 	/* Constructors */
 	explicit Writer(fdType fdType, int fd);

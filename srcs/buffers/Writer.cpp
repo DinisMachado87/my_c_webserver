@@ -18,6 +18,8 @@ ssize_t Writer::writeGather(struct iovec *iov, size_t iovLen) const
 		return sendmsgWrite(iov, iovLen);
 	case FILE:
 		return writev(_fd, iov, iovLen);
+	case NONE:
+		return 0;
 	}
 	return -1; // unreachable, silences warning
 }
@@ -29,6 +31,8 @@ ssize_t Writer::writeOne(const void *buf, size_t len) const
 		return send(_fd, buf, len, MSG_NOSIGNAL);
 	case FILE:
 		return ::write(_fd, buf, len);
+	case NONE:
+		return 0;
 	}
 	return -1; // unreachable, silences warning
 }
