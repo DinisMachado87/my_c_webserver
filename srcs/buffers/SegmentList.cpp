@@ -49,7 +49,7 @@ void SegmentList::pushHead(Segment *seg)
 {
 	assert(seg);
 	if (seg->allSent()) {
-		pushStack(seg);
+		pushToRecycleStack(seg);
 		return;
 	}
 	if (_head)
@@ -90,7 +90,7 @@ Segment *SegmentList::popTail()
 /* Recycle stack — singly-linked via _next, LIFO */
 
 // Push seg onto recycle stack, cursors zeroed. LIFO via _next, no _prev.
-void SegmentList::pushStack(Segment *seg)
+void SegmentList::pushToRecycleStack(Segment *seg)
 {
 	assert(seg);
 	seg->clearCursors();
@@ -114,7 +114,7 @@ void SegmentList::reset()
 	Segment *seg = _head;
 	while (seg) {
 		Segment *next = seg->_next;
-		pushStack(seg);
+		pushToRecycleStack(seg);
 		seg = next;
 	}
 	_head = NULL;
@@ -122,3 +122,22 @@ void SegmentList::reset()
 }
 
 bool SegmentList::empty() const { return _head == NULL; }
+
+Segment::e_comparison SegmentList::compare(const StrView &expected) const
+{
+	StrView rest = expected;
+	for (const Segment *seg = _head; seg; seg = seg->_next) {
+		if (rest.size() < seg->used())
+			return Segment::MISMATCH; // seg longer than expected
+		if (!rest.compare(seg->writtenView(), seg->used()))
+			return Segment::MISMATCH;
+		rest.removePrefix(seg->used());
+	}
+	return rest.empty() ? Segment::MATCH : Segment::INCOMPLETE;
+}
+
+void SegmentList::print(std::ostream &os) const
+{
+	for (const Segment *seg = _head; seg; seg = seg->_next)
+		os << *seg;
+}

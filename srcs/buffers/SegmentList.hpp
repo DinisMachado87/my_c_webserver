@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Segment.hpp"
 #include <cstddef>
+#include <ostream>
 
 class BufferManager;
-class Segment;
 
 /* Doubly-linked list of Segments. Thin endpoint bookkeeping over
  * Segment link primitives. Borrows from a BufferManager, returns every
@@ -25,7 +26,12 @@ public:
 	Segment *popHead();
 	Segment *popTail();
 
+	void pushToRecycleStack(Segment *seg);
+
 	bool empty() const;
+	void print(std::ostream &os) const;
+
+	Segment::e_comparison compare(const StrView &expected) const;
 
 private:
 	/* State */
@@ -37,10 +43,15 @@ private:
 	/* Recycle stack Methods */
 	void clear();
 	void clearCursors();
-	void pushStack(Segment *seg);
 	Segment *popStack();
 
 	/* Explicit disables */
 	SegmentList &operator=(const SegmentList &other);
 	SegmentList(const SegmentList &other);
 };
+
+inline std::ostream &operator<<(std::ostream &os, const SegmentList &list)
+{
+	list.print(os);
+	return os;
+}

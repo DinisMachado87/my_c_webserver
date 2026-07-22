@@ -14,7 +14,6 @@ Segment::Segment() :
 }
 
 /* Link primitives */
-// Splice node in after this. node's old links are overwritten, not read.
 void Segment::linkNext(Segment *node)
 {
 	assert(node);
@@ -25,7 +24,6 @@ void Segment::linkNext(Segment *node)
 	_next = node;
 }
 
-// Splice node in before this.
 void Segment::linkPrev(Segment *node)
 {
 	assert(node);
@@ -36,7 +34,6 @@ void Segment::linkPrev(Segment *node)
 	_prev = node;
 }
 
-// Detach self, patch both neighbors, null own links.
 void Segment::unlink()
 {
 	if (_prev)
@@ -47,9 +44,12 @@ void Segment::unlink()
 	_next = NULL;
 }
 
-// Poisons stale data so a use-after-return reads zeros, not old bytes.
 void Segment::poison() { std::memset(_data, 0, RECV_SIZE); }
-void Segment::clearCursors() { _written = 0; _sent = 0; }
+void Segment::clearCursors()
+{
+	_written = 0;
+	_sent = 0;
+}
 
 /* Methods */
 void Segment::reset()
@@ -112,3 +112,13 @@ size_t Segment::readable() const { return _written - _sent; }
 size_t Segment::writable() const { return RECV_SIZE - _written; }
 size_t Segment::used() const { return _written; }
 
+/* Comparison */
+
+Segment::e_comparison Segment::compare(const StrView &expected) const
+{
+	if (used() < expected.size())
+		return INCOMPLETE;
+	if (!writtenView().compare(expected, expected.size()))
+		return MISMATCH;
+	return MATCH;
+}

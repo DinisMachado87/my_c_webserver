@@ -30,7 +30,7 @@ protected:
 
 	/* State */
 	Reader _reader;
-	SegmentList _list;
+	SegmentList _segList;
 	BufferManager &_pool;
 	bool _inClosed;
 
