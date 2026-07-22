@@ -25,6 +25,8 @@ public:
 	Segment *popHead();
 	Segment *popTail();
 
+	bool empty() const;
+
 private:
 	/* State */
 	BufferManager &_segmentPool;

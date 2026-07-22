@@ -120,3 +120,5 @@ void SegmentList::reset()
 	_head = NULL;
 	_tail = NULL;
 }
+
+bool SegmentList::empty() const { return _head == NULL; }
