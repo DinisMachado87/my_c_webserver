@@ -14,7 +14,7 @@ public:
 	explicit Reader(FdType fdType, const int fd);
 
 	/* Methods */
-	ssize_t fill(void *buf, size_t len) const;
+	ssize_t readIn(void *buf, size_t len) const;
 
 private:
 	Reader();

@@ -42,7 +42,6 @@ private:
 
 	/* Recycle stack Methods */
 	void clear();
-	void clearCursors();
 	Segment *popStack();
 
 	/* Explicit disables */

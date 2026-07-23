@@ -49,7 +49,7 @@ protected:
 	{
 	public:
 		TestableIbuffer(int fd, BufferManager &pool) :
-			IBuffer(fd, Reader::FILE, pool)
+			IBuffer(Reader(Reader::FILE, fd), pool)
 		{
 		}
 

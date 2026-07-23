@@ -9,7 +9,7 @@ Reader::Reader(FdType fdType, int fd) :
 }
 
 /* Methods */
-ssize_t Reader::fill(void *buf, size_t len) const
+ssize_t Reader::readIn(void *buf, size_t len) const
 {
 	switch (_fdType) {
 	case SOCKET:

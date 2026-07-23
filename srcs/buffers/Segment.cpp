@@ -64,7 +64,7 @@ ssize_t Segment::readFrom(const Reader &reader)
 {
 	if (writable() == 0)
 		return 0;
-	ssize_t n = reader.fill(_data + _written, writable());
+	ssize_t n = reader.readIn(_data + _written, writable());
 	if (n > 0)
 		_written += static_cast<size_t>(n);
 	return n;

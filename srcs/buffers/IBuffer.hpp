@@ -14,7 +14,7 @@ class IBuffer
 {
 public:
 	/* Constructors */
-	IBuffer(int inFd, Reader::FdType inKind, BufferManager &pool);
+	IBuffer(const Reader &reader, BufferManager &pool);
 	virtual ~IBuffer();
 
 	/* Methods */
@@ -31,7 +31,7 @@ protected:
 	/* State */
 	Reader _reader;
 	SegmentList _segList;
-	BufferManager &_pool;
+	BufferManager &_segPool;
 	bool _inClosed;
 
 private:

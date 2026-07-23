@@ -16,9 +16,10 @@ public:
 
 	/* Constructors */
 	explicit Writer(fdType fdType, int fd);
+	Writer(const Writer &other);
 
 	/* Methods */
-	ssize_t writeGather(struct iovec *iov, size_t iovLen) const;
+	ssize_t writeGather(const struct iovec *iov, size_t iovLen) const;
 	ssize_t writeOne(const void *buf, size_t len) const;
 
 private:
@@ -27,5 +28,5 @@ private:
 	const int _fd;
 
 	/* Methods */
-	ssize_t sendmsgWrite(struct iovec *iov, int cnt) const;
+	ssize_t sendmsgWrite(const struct iovec *iov, int cnt) const;
 };

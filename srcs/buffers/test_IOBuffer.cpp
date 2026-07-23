@@ -1,6 +1,8 @@
 #include "BufferManager.hpp"
 #include "IOBuffer.hpp"
+#include "Reader.hpp"
 #include "Segment.hpp"
+#include "Writer.hpp"
 #include "webServ.hpp"
 #include <cstring>
 #include <fcntl.h>
@@ -68,7 +70,8 @@ protected:
 	{
 	public:
 		TestableIObuffer(int inFd, int outFd, BufferManager &pool) :
-			IOBuffer(inFd, Reader::FILE, outFd, IOBuffer::FILE, pool)
+			IOBuffer(Reader(Reader::FILE, inFd), Writer(Writer::FILE, outFd),
+					 pool)
 		{
 		}
 
@@ -186,7 +189,8 @@ TEST_F(IOBufferTest, SocketKindSendsToPeer)
 	int sockFds[2];
 	ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sockFds), OK);
 
-	IOBuffer buf(_inFds[0], Reader::FILE, sockFds[0], IOBuffer::SOCKET, _pool);
+	IOBuffer buf(Reader(Reader::FILE, _inFds[0]),
+				 Writer(Writer::SOCKET, sockFds[0]), _pool);
 	feed("sock", 4);
 	buf.readIn();
 	EXPECT_EQ(buf.writeOut(), 4);

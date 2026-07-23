@@ -3,10 +3,10 @@
 #include "Segment.hpp"
 #include "Writer.hpp"
 
-IOBuffer::IOBuffer(int inFd, Reader::FdType inFdType, int outFd,
-				   IOBuffer::e_outFdType outFdType, BufferManager &pool) :
-	IBuffer(inFd, inFdType, pool),
-	_writer(static_cast<Writer::fdType>(outFdType), outFd)
+IOBuffer::IOBuffer(const Reader &reader, const Writer &writer,
+				   BufferManager &pool) :
+	IBuffer(reader, pool),
+	_writer(writer)
 {
 }
 

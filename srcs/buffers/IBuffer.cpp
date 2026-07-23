@@ -2,10 +2,10 @@
 #include "BufferManager.hpp"
 #include "Segment.hpp"
 
-IBuffer::IBuffer(int inFd, Reader::FdType inKind, BufferManager &pool) :
-	_reader(inKind, inFd),
+IBuffer::IBuffer(const Reader &reader, BufferManager &pool) :
+	_reader(reader),
 	_segList(pool),
-	_pool(pool),
+	_segPool(pool),
 	_inClosed(false)
 {
 }
@@ -17,11 +17,11 @@ ssize_t IBuffer::readIn()
 {
 	Segment *seg = _segList.popTail();
 	if (!seg)
-		seg = _pool.getSegment();
+		seg = _segPool.getSegment();
 
 	else if (seg->writable() < RECV_SIZE / 3) {
 		_segList.pushTail(seg);
-		seg = _pool.getSegment();
+		seg = _segPool.getSegment();
 	}
 	ssize_t bytesRead = seg->readFrom(_reader);
 

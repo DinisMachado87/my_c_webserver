@@ -36,7 +36,7 @@ protected:
 	void expectFill(Reader &reader, const char *want, size_t n)
 	{
 		char buf[64];
-		ssize_t got = reader.fill(buf, sizeof(buf));
+		ssize_t got = reader.readIn(buf, sizeof(buf));
 		ASSERT_EQ(got, static_cast<ssize_t>(n));
 		EXPECT_EQ(std::memcmp(buf, want, n), 0);
 	}
@@ -60,7 +60,7 @@ TEST_F(ReaderTest, NoneReturnsZero)
 {
 	Reader reader(Reader::NONE, pipeFds[0]);
 	char buf[8];
-	EXPECT_EQ(reader.fill(buf, sizeof(buf)), 0);
+	EXPECT_EQ(reader.readIn(buf, sizeof(buf)), 0);
 }
 
 TEST_F(ReaderTest, ClosedFdReturnsNegative)
@@ -68,5 +68,5 @@ TEST_F(ReaderTest, ClosedFdReturnsNegative)
 	closeFd(pipeFds[0]);
 	Reader reader(Reader::FILE, pipeFds[0]);
 	char buf[8];
-	EXPECT_LT(reader.fill(buf, sizeof(buf)), 0);
+	EXPECT_LT(reader.readIn(buf, sizeof(buf)), 0);
 }

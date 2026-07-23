@@ -32,8 +32,7 @@ class IOBuffer : public IBuffer
 public:
 	enum e_outFdType { SOCKET = Writer::SOCKET, FILE = Writer::FILE };
 	/* Constructors */
-	IOBuffer(int inFd, Reader::FdType inFdType, int outFd,
-			 e_outFdType outFdType, BufferManager &pool);
+	IOBuffer(const Reader &reader, const Writer &writer, BufferManager &pool);
 	virtual ~IOBuffer();
 
 	/* Methods */

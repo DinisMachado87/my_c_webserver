@@ -10,8 +10,14 @@ Writer::Writer(fdType kind, int fd) :
 {
 }
 
+Writer::Writer(const Writer &other) :
+	_fdType(other._fdType),
+	_fd(other._fd)
+{
+}
+
 /* Methods */
-ssize_t Writer::writeGather(struct iovec *iov, size_t iovLen) const
+ssize_t Writer::writeGather(const struct iovec *iov, size_t iovLen) const
 {
 	switch (_fdType) {
 	case SOCKET:
@@ -38,7 +44,7 @@ ssize_t Writer::writeOne(const void *buf, size_t len) const
 }
 
 /* MSG_NOSIGNAL — client closed, EPIPE not SIGPIPE. */
-ssize_t Writer::sendmsgWrite(struct iovec *iov, int cnt) const
+ssize_t Writer::sendmsgWrite(const struct iovec *iov, int cnt) const
 {
 	struct msghdr msg;
 	std::memset(&msg, 0, sizeof(msg));
