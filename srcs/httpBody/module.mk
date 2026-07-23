@@ -1,4 +1,4 @@
-BODY_SRCS := ChunkDecoder.cpp ChunkEncoder.cpp
+BODY_SRCS := ChunkEncoder.cpp
 
 BODY_TEST_SRCS := $(notdir $(wildcard srcs/httpBody/test_*.cpp))
 
