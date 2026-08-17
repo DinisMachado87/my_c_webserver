@@ -66,7 +66,7 @@ clean:
 	rm -rf obj obj_debug obj_tests obj_tests_debug
 
 fclean: clean
-	rm -f $(NAME) $(NAME_TESTS)
+	rm -f libutils.a libutils_debug.a $(NAME_TESTS)
 
 re: fclean all
 

@@ -1,51 +1,31 @@
 NAME        := webserver
-NAME_DEBUG  := $(NAME)_debug
-NAME_TESTS  := $(NAME)_tests
 CXX         := c++
 CXX_FLAGS   := -Wall -Werror -Wextra -std=c++98 -MMD -MP
-TEST_FLAGS  := -lgtest -lgtest_main -lpthread
-LDFLAGS     :=
-OBJ_DIR     := obj
-
-# Filter arguments (e.g., "make test Connection SpecificTest")
-CLASS_ARG   := $(word 2,$(MAKECMDGOALS))
-TEST_ARG    := $(word 3,$(MAKECMDGOALS))
-ifdef CLASS_ARG
-	ifdef TEST_ARG
-	FILTER  := *$(CLASS_ARG)*.$(TEST_ARG)
-else
-	FILTER  := *$(CLASS_ARG)*
-endif
-endif
-
-# Detect build mode
-IS_DEBUG    := $(filter debug debug_test,$(MAKECMDGOALS))
-IS_TEST     := $(filter test debug_test,$(MAKECMDGOALS))
-
-ifdef IS_DEBUG
-	CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
-endif
-ifdef IS_TEST
-	LDFLAGS   += $(TEST_FLAGS)
-endif
-ifdef IS_TEST
-	OBJ_DIR   := $(OBJ_DIR)_tests$(if $(IS_DEBUG),_debug)
-else ifdef IS_DEBUG
-	OBJ_DIR   := $(OBJ_DIR)_debug
-endif
-
-#  Utils (stays a library) 
+GTEST_FLAGS := -lgtest -lgtest_main -lpthread
 UTILS_DIR   := srcs/utils
-UTILS_LIB   := $(UTILS_DIR)/libutils.a
-LIB_TARGET  := $(if $(IS_DEBUG),debug,all)
 
-#  Accumulator variables 
-SRCS_ALL      :=
-TEST_SRCS_ALL := 
-MODULES       := 
+# ---- Verbosity toggle: make V=1 echoes raw commands ----
+Q := $(if $(V),,@)
+
+# ---- Axes (derived from goals) ----
+KEY_WORDS   := all debug test re clean fclean bear utilsTest utilsDebugTest
+SELECT      := $(filter-out $(KEY_WORDS),$(MAKECMDGOALS))
+IS_DEBUG    := $(filter debug,$(MAKECMDGOALS))
+IS_TEST     := $(filter test,$(MAKECMDGOALS))
+.DEFAULT_GOAL := all
+
+# ---- Tree: debug forks obj; test is link-only (shares source .o) ----
+ifdef IS_DEBUG
+	OBJ_DIR   := obj_debug
+	CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
+else
+	OBJ_DIR   := obj
+endif
+
+# ---- Accumulators (filled by module.mk) ----
+MODULES       :=
 INCLUDE_DIRS  := srcs srcs/utils
 
-#  Include module fragments 
 include srcs/buffers/module.mk
 include srcs/httpBody/module.mk
 include srcs/engine/module.mk
@@ -58,143 +38,156 @@ include srcs/sockets/module.mk
 include srcs/parser/module.mk
 include srcs/logger/module.mk
 
-#  Include flags 
+# ---- Derive per-module vars from names (module name == dir) ----
+# $(1) = module name
+define derive_module
+$(if $(TRACE),$(info [mk] derive $(1): files=$($(1)_FILES)))
+$(1)_SRCS      := $$(addprefix srcs/$(1)/,$$($(1)_FILES))
+$(1)_TEST_SRCS := $$(wildcard srcs/$(1)/test_*.cpp)
+INCLUDE_DIRS   += srcs/$(1)
+endef
+$(foreach m,$(MODULES),$(eval $(call derive_module,$(m))))
+
+$(if $(TRACE),$(info [mk] MODULES=$(MODULES)))
+
 INCLUDE_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
-#  Object lists 
-ALL_OBJS      := $(SRCS_ALL:srcs/%.cpp=$(OBJ_DIR)/%.o)
-ALL_TEST_OBJS := $(TEST_SRCS_ALL:srcs/%.cpp=$(OBJ_DIR)/%.o)
-MAIN_OBJ      := $(OBJ_DIR)/main.o
+# ---- Transitive dependency closure ----
 
-#  Test filtering 
-ifdef CLASS_ARG
-	ACTIVE_TEST_OBJS := $(filter %/test_$(CLASS_ARG).o,$(ALL_TEST_OBJS))
+# direct_deps: deps of a module set, one level
+#   $(1) = modules
+direct_deps = $(sort $(foreach mod,$(1),$(DEPS_$(mod))))
+# walk: BFS engine — expand frontier until empty
+#   $(1) = seen (expanded)   $(2) = frontier (to expand)
+# frontier filtered against BOTH seen and itself — kills 2-node cycles
+define find_dependencies
+$(if $(2),$(call find_dependencies,$(1) $(2),$(filter-out $(1) $(2),$(sort $(call direct_deps,$(2))))),$(1))
+endef
+# closure: full transitive deps of selected modules
+#   $(1) = starting modules
+closure = $(sort $(call find_dependencies,,$(1)))
+
+# ---- Selection (needs MODULES from includes) ----
+MODULE_ARG  := $(filter $(MODULES),$(SELECT))
+FILTER_ARG  := $(filter-out $(MODULES),$(SELECT))
+
+# ---- Parse-phase trace: make ... TRACE=1 ----
+ifdef TRACE
+$(info [mk] SELECT=$(SELECT))
+$(info [mk] MODULE_ARG=$(MODULE_ARG))
+$(info [mk] FILTER_ARG=$(FILTER_ARG))
+endif
+
+ifdef MODULE_ARG
+	NEED_DIRS := $(call closure,$(MODULE_ARG))
+
+	ifndef IS_TEST
+		$(error Can only select module for test compilation. Can't link without main — try: make test $(MODULE_ARG))
+	endif
 else
-	ACTIVE_TEST_OBJS := $(ALL_TEST_OBJS)
+	NEED_DIRS := $(MODULES)
 endif
 
-#  Select binary name 
+# ---- Guard: empty closure means a cycle or a missing DEPS_ ----
+ifeq ($(strip $(NEED_DIRS)),)
+	$(error [mk] closure produced empty NEED_DIRS for '$(MODULE_ARG)' — dependency cycle or missing DEPS_ entry)
+endif
+
+$(if $(TRACE),$(info [mk] NEED_DIRS=$(NEED_DIRS)))
+
+# ---- Object lists ----
+SELECTED_SRC   := $(foreach m,$(NEED_DIRS),$($(m)_SRCS))
+SELECTED_TEST  := $(foreach m,$(NEED_DIRS),$($(m)_TEST_SRCS))
+
+ifeq ($(strip $(SELECTED_SRC)),)
+	$(error [mk] no sources for NEED_DIRS='$(NEED_DIRS)' — check <dir>_SRCS names match module dirs)
+endif
+
+OBJS      := $(SELECTED_SRC:srcs/%.cpp=$(OBJ_DIR)/%.o)
+TEST_OBJS := $(SELECTED_TEST:srcs/%.cpp=$(OBJ_DIR)/%.o)
+MAIN_OBJ  := $(OBJ_DIR)/main.o
+
 ifdef IS_TEST
-	NAME    := $(NAME_TESTS)
-else ifdef IS_DEBUG
-	NAME    := $(NAME_DEBUG)
+	LINK_OBJS := $(OBJS) $(TEST_OBJS)
+	LDFLAGS   += $(GTEST_FLAGS)
+else
+	LINK_OBJS := $(MAIN_OBJ) $(OBJS)
 endif
 
-#  Compile rules 
+# ---- Binary name per mode ----
+NAME		:= $(NAME)$(if $(IS_DEBUG),_debug)$(if $(IS_TEST),_tests)
+UTILS_LIB   := $(UTILS_DIR)/libutils$(if $(IS_DEBUG),_debug).a
+
+# ---- Header dependency tracking (scoped to selection) ----
+DEPS := $(OBJS:.o=.d) $(TEST_OBJS:.o=.d) $(MAIN_OBJ:.o=.d)
+-include $(DEPS)
+
+# ---- Per-module compile rules ----
 define module_rule
 $(OBJ_DIR)/$(1)/%.o: srcs/$(1)/%.cpp
 	@mkdir -p $$(dir $$@)
-	$$(CXX) $$(CXX_FLAGS) $$(INCLUDE_FLAGS) -c $$< -o $$@
+	@echo "  CXX     $$<"
+	$(Q)$$(CXX) $$(CXX_FLAGS) $$(INCLUDE_FLAGS) -c $$< -o $$@
 endef
 
-$(foreach mod,$(MODULES),$(eval $(call module_rule,$(mod))))
+$(foreach m,$(MODULES),$(eval $(call module_rule,$(m))))
 
 $(MAIN_OBJ): srcs/main.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+	@echo "  CXX     $<"
+	$(Q)$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-#  Dependencies 
-DEPS := $(ALL_OBJS:.o=.d) $(ALL_TEST_OBJS:.o=.d) $(MAIN_OBJ:.o=.d)
--include $(DEPS)
+# ---- Build entry ----
+build: $(NAME)
 
-#  Test runner 
+$(NAME): $(LINK_OBJS) $(UTILS_LIB)
+	@echo "  LINK    $@"
+	$(Q)$(CXX) $(CXX_FLAGS) $(LINK_OBJS) $(UTILS_LIB) $(LDFLAGS) -o $@
+	@echo "flags:   $(CXX_FLAGS)"
+	@echo "modules: $(NEED_DIRS)"
+	@echo "objects: $(words $(LINK_OBJS))"
+
+.PHONY: $(UTILS_LIB)
+$(UTILS_LIB):
+	@$(MAKE) -C $(UTILS_DIR) $(if $(IS_DEBUG),debug) NAME=$(notdir $@)
+
+# ---- Run helper ----
+RUN          := $(if $(IS_DEBUG),gdb --args,)
+GTEST_FILTER := $(if $(FILTER_ARG),--gtest_filter=*$(FILTER_ARG)*)
+
 define run_tests
-@if [ -z "$(FILTER)" ]; then \
-	$(1) ./$(NAME) gtest_break_on_failure; \
-	else \
-	echo "Running tests matching: $(FILTER)"; \
-	$(1) ./$(NAME) gtest_filter=$(FILTER) gtest_break_on_failure; \
-	fi
+	@echo
+	$(RUN) ./$(NAME) $(GTEST_FILTER) --gtest_break_on_failure
 endef
 
-#  Utils library 
-$(UTILS_LIB):
-	$(MAKE) -C $(UTILS_DIR) $(LIB_TARGET)
+# ---- Goals ----
+all:   build
+debug: build
 
-#  Main targets 
-all: $(NAME)
-debug: $(NAME)
+test: build
+	$(call run_tests)
 
-$(NAME): $(if $(IS_TEST),$(ALL_OBJS) $(ACTIVE_TEST_OBJS),$(MAIN_OBJ) $(ALL_OBJS)) $(UTILS_LIB)
-	$(CXX) $(CXX_FLAGS) $^ $(LDFLAGS) -o $@
+# module words select + trigger build; filter words absorbed
+$(foreach m,$(MODULES),$(eval $(m): build ;))
+$(foreach f,$(filter-out $(MODULES),$(FILTER_ARG)),$(eval $(f): ;))
 
-#  Full test targets 
-test: $(NAME)
-	$(call run_tests,)
-
-debug_test: $(NAME)
-	$(call run_tests,gdb args)
-
-#  Per-module test targets 
-buffers_tests: $(BUFFERS_OBJS) $(BUFFERS_TEST_OBJS) $(UTILS_LIB)
-	$(CXX) $(CXX_FLAGS) $^ $(TEST_FLAGS) -o $@
-
-body_tests: $(BODY_OBJS) $(BODY_TEST_OBJS) $(BUFFERS_OBJS) $(UTILS_LIB)
-	$(CXX) $(CXX_FLAGS) $^ $(TEST_FLAGS) -o $@
-
-#  Per-module test runners 
-buffersTest: buffers_tests
-	@if [ -z "$(FILTER)" ]; then \
-		./buffers_tests --gtest_break_on_failure; \
-	else \
-		echo "Running tests matching: $(FILTER)"; \
-		./buffers_tests --gtest_filter=$(FILTER) --gtest_break_on_failure; \
-	fi
-
-bodyTest: body_tests
-	@if [ -z "$(FILTER)" ]; then \
-		./body_tests --gtest_break_on_failure; \
-	else \
-		echo "Running tests matching: $(FILTER)"; \
-		./body_tests --gtest_filter=$(FILTER) --gtest_break_on_failure; \
-	fi
-
-buffersDebugTest: CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
-buffersDebugTest: buffers_tests
-	$(call run_tests,gdb args)
-
-bodyDebugTest: CXX_FLAGS += -ggdb -D_GLIBCXX_DEBUG
-bodyDebugTest: body_tests
-	$(call run_tests,gdb args)
-
-#  Libraries 
 utilsTest:
-	$(MAKE) -C $(UTILS_DIR) test $(CLASS_ARG) $(TEST_ARG)
-
+	$(MAKE) -C $(UTILS_DIR) test $(FILTER_ARG)
 utilsDebugTest:
-	$(MAKE) -C $(UTILS_DIR) debug_test $(CLASS_ARG) $(TEST_ARG)
+	$(MAKE) -C $(UTILS_DIR) debug_test $(FILTER_ARG)
 
-#  Bear 
 bear:
-	bear  $(MAKE) re
-	bear append  $(MAKE) -C $(UTILS_DIR) re
+	bear -- $(MAKE) re
 
-#  Clean 
 clean:
-	rm -rf obj obj_debug obj_tests obj_tests_debug
+	rm -rf obj obj_debug
 	$(MAKE) -C $(UTILS_DIR) clean
 
 fclean: clean
-	rm -f webserver webserver_debug webserver_tests \
-		buffers_tests body_tests
+	rm -f $(NAME_BASE) $(NAME_BASE)_debug $(NAME_BASE)_tests $(NAME_BASE)_debug_tests build.log
 	$(MAKE) -C $(UTILS_DIR) fclean
 
 re: fclean all
 
-#  Dummy targets for filter arguments 
-ifdef CLASS_ARG
-	$(CLASS_ARG):
-@:
-	endif
-	ifdef TEST_ARG
-$(TEST_ARG):
-	@:
-endif
-
-.PHONY: all debug clean fclean re \
-	test debug_test \
-	buffers_tests body_tests \
-	buffersTest bodyTest \
-	buffersDebugTest bodyDebugTest \
-	utilsTest utilsDebugTest \
-	bear
+.PHONY: all debug test build re clean fclean bear utilsTest utilsDebugTest \
+	$(MODULES) $(FILTER_ARG)
