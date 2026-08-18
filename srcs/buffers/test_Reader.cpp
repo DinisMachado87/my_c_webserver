@@ -45,28 +45,21 @@ protected:
 TEST_F(ReaderTest, FileReadsFromPipe)
 {
 	ASSERT_EQ(write(pipeFds[1], "file", 4), 4);
-	Reader reader(Reader::FILE, pipeFds[0]);
+	Reader reader(FD_FILE, pipeFds[0]);
 	expectFill(reader, "file", 4);
 }
 
 TEST_F(ReaderTest, SocketReceivesFromPeer)
 {
 	ASSERT_EQ(send(sockFds[1], "sock", 4, 0), 4);
-	Reader reader(Reader::SOCKET, sockFds[0]);
+	Reader reader(FD_SOCKET, sockFds[0]);
 	expectFill(reader, "sock", 4);
-}
-
-TEST_F(ReaderTest, NoneReturnsZero)
-{
-	Reader reader(Reader::NONE, pipeFds[0]);
-	char buf[8];
-	EXPECT_EQ(reader.readIn(buf, sizeof(buf)), 0);
 }
 
 TEST_F(ReaderTest, ClosedFdReturnsNegative)
 {
 	closeFd(pipeFds[0]);
-	Reader reader(Reader::FILE, pipeFds[0]);
+	Reader reader(FD_FILE, pipeFds[0]);
 	char buf[8];
 	EXPECT_LT(reader.readIn(buf, sizeof(buf)), 0);
 }

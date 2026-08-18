@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Segment.hpp"
-#include <cstddef>
 #include <ostream>
 
 class BufferManager;

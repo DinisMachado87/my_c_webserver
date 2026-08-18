@@ -13,27 +13,27 @@ template <int CAPACITY> class ScatterList
 private:
 	/* State */
 	struct iovec _iovSections[CAPACITY];
-	int _sectionsLeft;
+	int _loadedSections;
 
 public:
 	/* Constructors */
 	ScatterList() :
-		_sectionsLeft(0)
+		_loadedSections(0)
 	{
 	}
 
 	/* Methods */
-	void reset() { _sectionsLeft = 0; }
+	void reset() { _loadedSections = 0; }
 
 	// Appends one span. Ignored past capacity.
 	void add(const StrView &section)
 	{
-		if (_sectionsLeft >= CAPACITY || section.size() == 0)
+		if (_loadedSections >= CAPACITY || section.size() == 0)
 			return;
-		_iovSections[_sectionsLeft].iov_base
+		_iovSections[_loadedSections].iov_base
 			= const_cast<char *>(section.data());
-		_iovSections[_sectionsLeft].iov_len = section.size();
-		_sectionsLeft++;
+		_iovSections[_loadedSections].iov_len = section.size();
+		_loadedSections++;
 	}
 
 	// Records bytes sent, trims fully-sent sections, offsets the partial one.
@@ -43,23 +43,23 @@ public:
 			return;
 
 		struct iovec *curSection = _iovSections;
-		struct iovec *end = _iovSections + _sectionsLeft;
+		struct iovec *end = _iovSections + _loadedSections;
 		while (curSection < end && sent >= curSection->iov_len) {
 			sent -= curSection->iov_len;
 			curSection++;
 		}
 		assert(sent == 0 || curSection < end);
 
-		_sectionsLeft -= static_cast<int>(curSection - _iovSections);
-		if (_sectionsLeft == 0)
+		_loadedSections -= static_cast<int>(curSection - _iovSections);
+		if (_loadedSections == 0)
 			return;
 
 		curSection->iov_base = static_cast<char *>(curSection->iov_base) + sent;
 		curSection->iov_len -= sent;
-		for (int i = 0; i < _sectionsLeft; i++)
+		for (int i = 0; i < _loadedSections; i++)
 			_iovSections[i] = curSection[i];
 	}
 
 	const struct iovec *iov() const { return _iovSections; }
-	int sectionsLeft() const { return _sectionsLeft; }
+	int loadedSections() const { return _loadedSections; }
 };

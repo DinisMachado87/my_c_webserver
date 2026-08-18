@@ -1,4 +1,5 @@
 #pragma once
+#include "webServ.hpp"
 #include <cstddef>
 #include <sys/types.h>
 
@@ -7,11 +8,8 @@
 class Reader
 {
 public:
-	/* State */
-	enum FdType { SOCKET, FILE, NONE };
-
 	/* Constructors */
-	explicit Reader(FdType fdType, const int fd);
+	explicit Reader(e_FdType fdType, const int fd);
 
 	/* Methods */
 	ssize_t readIn(void *buf, size_t len) const;
@@ -20,6 +18,6 @@ private:
 	Reader();
 
 	/* State */
-	const FdType _fdType;
+	const e_FdType _fdType;
 	const int _fd;
 };

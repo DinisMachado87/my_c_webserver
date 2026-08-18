@@ -55,14 +55,14 @@ protected:
 
 TEST_F(WriterTest, WriteOneFileToPipe)
 {
-	Writer writer(Writer::FILE, pipeFds[1]);
+	Writer writer(FD_FILE, pipeFds[1]);
 	ASSERT_EQ(writer.writeOne("file", 4), 4);
 	expectRead(pipeFds[0], "file", 4);
 }
 
 TEST_F(WriterTest, WriteOneSocketToPeer)
 {
-	Writer writer(Writer::SOCKET, sockFds[0]);
+	Writer writer(FD_SOCKET, sockFds[0]);
 	ASSERT_EQ(writer.writeOne("sock", 4), 4);
 	expectRead(sockFds[1], "sock", 4);
 }
@@ -71,7 +71,7 @@ TEST_F(WriterTest, WriteOneClosedFdReturnsNegative)
 {
 	closeFd(pipeFds[1]);
 
-	Writer writer(Writer::FILE, pipeFds[1]);
+	Writer writer(FD_FILE, pipeFds[1]);
 	EXPECT_LT(writer.writeOne("x", 1), 0);
 }
 
@@ -82,7 +82,7 @@ TEST_F(WriterTest, WriteGatherFileConcatenates)
 	struct iovec iov[2];
 	makeIov(iov, "ab", "cd");
 
-	Writer writer(Writer::FILE, pipeFds[1]);
+	Writer writer(FD_FILE, pipeFds[1]);
 	ASSERT_EQ(writer.writeGather(iov, 2), 4);
 	expectRead(pipeFds[0], "abcd", 4);
 }
@@ -92,7 +92,7 @@ TEST_F(WriterTest, WriteGatherSocketConcatenates)
 	struct iovec iov[2];
 	makeIov(iov, "ab", "cd");
 
-	Writer writer(Writer::SOCKET, sockFds[0]);
+	Writer writer(FD_SOCKET, sockFds[0]);
 	ASSERT_EQ(writer.writeGather(iov, 2), 4);
 	expectRead(sockFds[1], "abcd", 4);
 }

@@ -110,7 +110,7 @@ TEST_F(SegmentPipeTest, ReadFromReads)
 {
 	const char *src = "piped";
 	writePipe(src, 5);
-	Reader reader(Reader::FILE, fds[0]);
+	Reader reader(FD_FILE, fds[0]);
 	ssize_t bytesRead = seg->readFrom(reader);
 	ASSERT_EQ(bytesRead, 5);
 	expectBytes(seg->writtenView(), src, 5);
@@ -118,7 +118,7 @@ TEST_F(SegmentPipeTest, ReadFromReads)
 
 TEST_F(SegmentPipeTest, SecondReadFromAppends)
 {
-	Reader reader(Reader::FILE, fds[0]);
+	Reader reader(FD_FILE, fds[0]);
 	writePipe("aaa", 3);
 	seg->readFrom(reader);
 	writePipe("bbb", 3);
@@ -131,7 +131,7 @@ TEST_F(SegmentPipeTest, ReadFromFullSegNoSyscall)
 	std::string big(RECV_SIZE, 'x');
 	seg->copyIn(big.data(), RECV_SIZE);
 	ASSERT_EQ(seg->writable(), 0u);
-	Reader reader(Reader::FILE, fds[0]);
+	Reader reader(FD_FILE, fds[0]);
 	writePipe("yyy", 3);
 	ssize_t bytesRead = seg->readFrom(reader);
 	EXPECT_EQ(bytesRead, 0);
@@ -142,7 +142,7 @@ TEST_F(SegmentPipeTest, ReadFromClosedFd)
 {
 	close(fds[0]);
 	fds[0] = -1;
-	Reader reader(Reader::FILE, fds[0]);
+	Reader reader(FD_FILE, fds[0]);
 	ssize_t bytesRead = seg->readFrom(reader);
 	EXPECT_LT(bytesRead, 0);
 }
@@ -150,7 +150,7 @@ TEST_F(SegmentPipeTest, ReadFromClosedFd)
 TEST_F(SegmentPipeTest, SendToDrainsOrdered)
 {
 	seg->copyIn("sendme", 6);
-	Writer writer(Writer::FILE, fds[1]);
+	Writer writer(FD_FILE, fds[1]);
 	ASSERT_EQ(seg->sendTo(writer), 6);
 	char buf[16];
 	readPipe(buf, 6);
@@ -161,7 +161,7 @@ TEST_F(SegmentPipeTest, SendToDrainsOrdered)
 TEST_F(SegmentPipeTest, SendToEmptiesBufferWhenSpace)
 {
 	seg->copyIn("abcdef", 6);
-	Writer writer(Writer::FILE, fds[1]);
+	Writer writer(FD_FILE, fds[1]);
 	seg->sendTo(writer);
 	char buf[16];
 	readPipe(buf, 6);
@@ -170,7 +170,7 @@ TEST_F(SegmentPipeTest, SendToEmptiesBufferWhenSpace)
 
 TEST_F(SegmentPipeTest, SendToEmptyNoSyscall)
 {
-	Writer writer(Writer::FILE, fds[1]);
+	Writer writer(FD_FILE, fds[1]);
 	ssize_t bytesSent = seg->sendTo(writer);
 	EXPECT_EQ(bytesSent, 0);
 }

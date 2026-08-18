@@ -127,8 +127,6 @@ Segment::e_comparison SegmentList::compare(const StrView &expected) const
 {
 	StrView rest = expected;
 	for (const Segment *seg = _head; seg; seg = seg->_next) {
-		if (rest.size() < seg->used())
-			return Segment::MISMATCH; // seg longer than expected
 		if (!rest.compare(seg->writtenView(), seg->used()))
 			return Segment::MISMATCH;
 		rest.removePrefix(seg->used());

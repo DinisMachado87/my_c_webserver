@@ -24,27 +24,33 @@ SEND CASES
 class BufferManager;
 
 /* Input and output buffer. IBuffer's read side plus a Writer — drains the
- * same bytes it read, one segment per writeOut() (level-triggered). NONE
- * out-kind for in-memory bodies: nothing to send, seeded chain drains until
- * done(). ChunkEncoder and ChunkDecoder derive reframing on the way out. */
+ * same bytes it read, one segment per writeOut() (level-triggered).
+ * ChunkEncoder and ChunkDecoder derive reframing on the way out. */
 class IOBuffer : public IBuffer
 {
+private:
+	/* Explicit disables */
+	IOBuffer();
+	IOBuffer(const IOBuffer &other);
+	IOBuffer &operator=(const IOBuffer &other);
+
+protected:
+	/* State */
+	Writer _writer;
+	Segment *_curSegment;
+
+	/* Methods */
+	virtual bool takeSegment();
+	void releaseSegment();
+	virtual bool segmentSpent() const;
+
 public:
-	enum e_outFdType { SOCKET = Writer::SOCKET, FILE = Writer::FILE };
 	/* Constructors */
 	IOBuffer(const Reader &reader, const Writer &writer, BufferManager &pool);
 	virtual ~IOBuffer();
 
 	/* Methods */
-	// Sends one segment. Returns bytes sent, 0 if empty, -1 on error.
+	// Returns bytes sent, 0 if empty, -1 on error.
 	virtual ssize_t writeOut();
-
-protected:
-	/* State */
-	Writer _writer;
-
-private:
-	IOBuffer();
-	IOBuffer(const IOBuffer &other);
-	IOBuffer &operator=(const IOBuffer &other);
+	Segment::e_comparison compareUnsent(const StrView &expected) const;
 };

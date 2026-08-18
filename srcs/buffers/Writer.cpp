@@ -1,11 +1,12 @@
 #include "Writer.hpp"
+#include "webServ.hpp"
 #include <cstddef>
 #include <cstring>
 #include <sys/socket.h>
 #include <unistd.h>
 
-Writer::Writer(fdType kind, int fd) :
-	_fdType(kind),
+Writer::Writer(e_FdType Type, int fd) :
+	_fdType(Type),
 	_fd(fd)
 {
 }
@@ -20,12 +21,10 @@ Writer::Writer(const Writer &other) :
 ssize_t Writer::writeGather(const struct iovec *iov, size_t iovLen) const
 {
 	switch (_fdType) {
-	case SOCKET:
+	case FD_SOCKET:
 		return sendmsgWrite(iov, iovLen);
-	case FILE:
+	case FD_FILE:
 		return writev(_fd, iov, iovLen);
-	case NONE:
-		return 0;
 	}
 	return -1; // unreachable, silences warning
 }
@@ -33,12 +32,10 @@ ssize_t Writer::writeGather(const struct iovec *iov, size_t iovLen) const
 ssize_t Writer::writeOne(const void *buf, size_t len) const
 {
 	switch (_fdType) {
-	case SOCKET:
+	case FD_SOCKET:
 		return send(_fd, buf, len, MSG_NOSIGNAL);
-	case FILE:
+	case FD_FILE:
 		return ::write(_fd, buf, len);
-	case NONE:
-		return 0;
 	}
 	return -1; // unreachable, silences warning
 }

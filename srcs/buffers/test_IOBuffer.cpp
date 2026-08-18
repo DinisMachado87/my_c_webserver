@@ -70,8 +70,7 @@ protected:
 	{
 	public:
 		TestableIObuffer(int inFd, int outFd, BufferManager &pool) :
-			IOBuffer(Reader(Reader::FILE, inFd), Writer(Writer::FILE, outFd),
-					 pool)
+			IOBuffer(Reader(FD_FILE, inFd), Writer(FD_FILE, outFd), pool)
 		{
 		}
 
@@ -142,16 +141,17 @@ TEST_F(IOBufferTest, SentSegmentReturnsToPool)
 	EXPECT_EQ(buf.dataRead(), ""); // chain empty, segment pooled
 }
 
-TEST_F(IOBufferTest, PartialSendKeepsSegmentAtHead)
+TEST_F(IOBufferTest, FailedWriteRetainsUnsent)
 {
 	TestableIObuffer buf(_inFds[0], _outFds[1], _pool);
 	std::string big(RECV_SIZE, 'y');
 	feed(big.data(), big.size());
-	buf.readIn();
+	while (buf.dataRead().size() < RECV_SIZE)
+		buf.readIn();
 
-	closeFd(_outFds[0]); // reader gone, pipe write fails
-	EXPECT_LT(buf.writeOut(), 0);
-	EXPECT_EQ(buf.compareChain(big), Segment::MATCH); // still buffered
+	closeFd(_outFds[0]);		  // reader gone
+	EXPECT_LT(buf.writeOut(), 0); // write fails, nothing sent
+	EXPECT_EQ(buf.compareUnsent(big), Segment::MATCH); // full payload held
 }
 
 /* done() */
@@ -189,8 +189,8 @@ TEST_F(IOBufferTest, SocketKindSendsToPeer)
 	int sockFds[2];
 	ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sockFds), OK);
 
-	IOBuffer buf(Reader(Reader::FILE, _inFds[0]),
-				 Writer(Writer::SOCKET, sockFds[0]), _pool);
+	IOBuffer buf(Reader(FD_FILE, _inFds[0]), Writer(FD_SOCKET, sockFds[0]),
+				 _pool);
 	feed("sock", 4);
 	buf.readIn();
 	EXPECT_EQ(buf.writeOut(), 4);

@@ -1,4 +1,5 @@
 #pragma once
+#include "webServ.hpp"
 #include <cstddef>
 #include <sys/uio.h>
 
@@ -9,13 +10,8 @@
 class Writer
 {
 public:
-	Writer();
-
-	/* State */
-	enum fdType { SOCKET, FILE, NONE };
-
 	/* Constructors */
-	explicit Writer(fdType fdType, int fd);
+	explicit Writer(e_FdType fdType, int fd);
 	Writer(const Writer &other);
 
 	/* Methods */
@@ -23,8 +19,11 @@ public:
 	ssize_t writeOne(const void *buf, size_t len) const;
 
 private:
+	/* Explicit disables */
+	Writer();
+
 	/* State */
-	const fdType _fdType;
+	const e_FdType _fdType;
 	const int _fd;
 
 	/* Methods */
