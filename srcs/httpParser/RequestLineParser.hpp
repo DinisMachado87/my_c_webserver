@@ -10,12 +10,11 @@
 class RequestLineParser
 {
 public:
-	RequestLineParser(HttpToken &token, Expect &expect,
-					  RequestLine &requestline, uchar &mainState);
+	RequestLineParser(RequestLine &requestline, HttpToken &token,
+					  Expect &expect);
 	~RequestLineParser();
 
-	// Advances as far as input allows. Throws HttpError on protocol violations.
-	void parse();
+	bool parse();
 
 private:
 	friend class HttpParser;
@@ -24,13 +23,13 @@ private:
 	RequestLineParser(const RequestLineParser &other);
 
 protected:
+	RequestLine &_requestLine;
+
 	HttpToken &_token;
 	Expect &_expect;
-	RequestLine &_requestLine;
 
 	StrView _rawPath;
 
 	uchar _state;
-	uchar &_mainState;
 	enum e_state { METHOD, PATH, HTTP, NEWLINE };
 };

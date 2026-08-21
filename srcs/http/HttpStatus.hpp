@@ -1,6 +1,6 @@
-#ifndef HTTPSTATUS_HPP
-#define HTTPSTATUS_HPP
+#pragma once
 
+#include "StrView.hpp"
 #include <ostream>
 #include <webServ.hpp>
 
@@ -8,18 +8,19 @@ class HttpStatus
 {
 private:
 	uint _code;
-	const char *_msg;
+	StrView _codeMsgStr; // assigned in the beginning of the program in the
+						 // const constructor through StrView convertion
 
 public:
 	// Constructors and destructors
-	HttpStatus(uint code, const char *reason);
+	HttpStatus(uint code, const char *line);
 	HttpStatus(const HttpStatus &other);
 	HttpStatus &operator=(const HttpStatus &other);
 
 	// Methods
 	std::ostream &print(std::ostream &stream) const;
 	uint getCode() const;
-	const char *getReason() const;
+	const StrView &codeAndMsg() const;
 
 	// 2xx
 	static const HttpStatus _OK;
@@ -54,5 +55,3 @@ inline std::ostream &operator<<(std::ostream &stream, const HttpStatus &status)
 	status.print(stream);
 	return stream;
 }
-
-#endif

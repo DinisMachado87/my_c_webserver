@@ -5,7 +5,7 @@ using std::ostream;
 
 HttpError::HttpError(const HttpStatus &status) :
 	_status(status),
-	_detail(status.getReason())
+	_detail(status.codeAndMsg().data())
 {
 }
 
@@ -21,6 +21,8 @@ HttpError::HttpError(const HttpError &other) :
 	_detail(other._detail)
 {
 }
+
+HttpError::~HttpError() throw() {};
 
 HttpError &HttpError::operator=(const HttpError &other)
 {

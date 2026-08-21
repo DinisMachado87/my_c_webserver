@@ -1,11 +1,15 @@
 #include "RequestPathConsolidator.hpp"
 #include "RequestPath.hpp"
+#include "StrView.hpp"
 
 RequestPathConsolidator::RequestPathConsolidator(const StrView &path) :
 	PathConsolidator(path),
-	_type(RequestPath::NONE) {}
+	_type(RequestPath::NONE)
+{
+}
 
-void RequestPathConsolidator::extractHttpInfo() {
+void RequestPathConsolidator::extractHttpInfo()
+{
 	if (_segments.empty())
 		return;
 	if (_segments.back() == "/") {
@@ -17,13 +21,14 @@ void RequestPathConsolidator::extractHttpInfo() {
 		}
 	} else {
 		_file = _segments.back();
-		_sufix = _file.lastSplit('.', BEFORE);
+		_sufix = _file.lastSplit('.', StrView::BEFORE);
 		_type = ('.' == *_sufix.data()) ? RequestPath::EXECUTABLE
 										: RequestPath::FILE;
 	}
 }
 
-void RequestPathConsolidator::trimPath() {
+void RequestPathConsolidator::trimPath()
+{
 	if (_type == RequestPath::DIR)
 		_dirPath = _path;
 	else {
@@ -32,7 +37,8 @@ void RequestPathConsolidator::trimPath() {
 	}
 }
 
-RequestPath RequestPathConsolidator::consolidate(const StrView &pathStr) {
+RequestPath RequestPathConsolidator::consolidate(const StrView &pathStr)
+{
 	RequestPathConsolidator c(pathStr);
 
 	c.isSingleSlash();

@@ -13,28 +13,25 @@
 class HttpHeadersParser
 {
 public:
-	HttpHeadersParser(StrViewMap *headers, uchar &mainState, HttpToken &token,
-					  Expect &expect);
+	HttpHeadersParser(StrViewMap &headers, HttpToken &token, Expect &expect);
 	~HttpHeadersParser();
 
-	void parseHeaders(const uchar curState);
+	bool parseHeaders();
 
 private:
 	/* Explicit disables*/
 	HttpHeadersParser(const HttpHeadersParser &other);
-	HttpHeadersParser &operator=(const HttpHeadersParser &other);
 	HttpHeadersParser();
 
 protected:
-	enum e_httpHeadersState { KEY, SEPARATOR, VALUE, LINEEND };
+	enum e_httpHeadersState { KEY, SEPARATOR, VALUE, NEWLINE };
 
 	HttpToken &_token;
 	Expect &_expect;
 
 	uchar _state;
-	uchar &_mainState;
 
-	StrViewMap *_headers;
+	StrViewMap _headers;
 	StrView _key;
 	StrView _value;
 };

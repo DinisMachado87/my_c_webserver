@@ -23,7 +23,7 @@ public:
 	uchar getMethod() const;
 	const StrView &getPathQuery() const;
 	const StrView &getPathFragment() const;
-	RequestPath &requestPath();
+	const RequestPath &requestPath() const;
 	const char *getMethodStr() const;
 	void print(std::ostream &stream) const;
 };

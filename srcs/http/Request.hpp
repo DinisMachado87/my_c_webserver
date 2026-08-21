@@ -2,7 +2,7 @@
 #define REQUEST_HPP
 
 #include "IOBuffer.hpp"
-#include "Location.hpp"
+#include "RequestBuffer.hpp"
 #include "RequestLine.hpp"
 #include "RequestPath.hpp"
 #include "StrView.hpp"
@@ -20,18 +20,16 @@ private:
 	Request(const Request &other);
 
 protected:
-	IOBuffer _buff;
+	RequestBuffer _buff;
 
 	RequestLine _requestLine;
 	StrViewMap _headers;
 	StrView _body;
 
-	Location *_location; // resolved after VALIDATE state
-	std::string _absolutePath;
-
 	// Friend only private constructor
 	Request(int fd, BufferManager &bufferManager);
 	friend class HttpParser;
+	friend class Router;
 	friend class Expect;
 
 public:
@@ -47,7 +45,7 @@ public:
 	const StrView *getHeaderValue(const char *charKey) const; // NULL if missing
 	const StrView *getHeaderValue(StrView &key) const;
 
-	RequestPath &getPath();
+	const RequestPath &getPath() const;
 	uchar getMethod() const;
 	const StrView &getBody() const;
 };

@@ -19,12 +19,16 @@ public:
 	/* Operators overload*/
 	HttpToken &operator=(const HttpToken &other);
 
+	bool loadNextWord();
 	void loadNextHex(size_t *ret);
 	StrView getBody(size_t bodySize);
+	StrView leftover() const;
 
 	/* CRLF detection — returns SINGLE (\r\n), DOUBLE (\r\n\r\n),
 	 * or sets _needsMoreInput if the sequence is truncated. */
-	uchar handleNewline();
+	// uchar handleNewline();
+	bool isNewLine();
+	bool consumeNewLine();
 
 	// Builds the HTTP delimiter table (spaces + newlines only).
 	static const uchar *httpDelimiters();

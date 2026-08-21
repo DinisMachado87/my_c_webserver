@@ -1,6 +1,7 @@
 #include "ASocket.hpp"
 #include "BufferManager.hpp"
 #include "Logger.hpp"
+#include "Traced.hpp"
 #include "webServ.hpp"
 #include <cerrno>
 #include <cstring>
@@ -20,22 +21,27 @@ ASocket::ASocket(const int fd, const Server &server,
 	_serverAddr(serverAddr),
 	_parser(server, fd, bufferManager),
 	_events(0),
-	_bufferManager(bufferManager) {}
+	_bufferManager(bufferManager)
+{
+}
 
-ASocket::~ASocket() {
+ASocket::~ASocket()
+{
 	if (_fd >= 0)
 		close(_fd);
 }
 
 // Error handeling
-runtime_error ASocket::handleError(const string errMsg) {
+runtime_error ASocket::handleError(const string errMsg)
+{
 	return runtime_error(errMsg + strerror(errno));
 }
 
 // Public Methods
 int ASocket::getFd() const { return (_fd); }
 
-int ASocket::setNonBlocking(int fd) {
+int ASocket::setNonBlocking(int fd)
+{
 	int flags = fcntl(fd, F_GETFL);
 	if (flags == ERR)
 		throw runtime_error(TRACED("Getting fcntl flags"));
@@ -44,7 +50,8 @@ int ASocket::setNonBlocking(int fd) {
 	return OK;
 }
 
-uint32_t ASocket::trackCurEvents(uint32_t events) {
+uint32_t ASocket::trackCurEvents(uint32_t events)
+{
 	_events = events;
 	return _events;
 }

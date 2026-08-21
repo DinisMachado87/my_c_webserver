@@ -1,3 +1,3 @@
-httpBody_FILES := ChunkEncoder.cpp ChunkDecoder.cpp ScatterIOBuffer.cpp HttpStatus.cpp
+httpBody_FILES := ChunkEncoder.cpp ChunkDecoder.cpp ScatterIOBuffer.cpp
 DEPS_httpBody  := buffers
 MODULES        += httpBody

@@ -1,4 +1,4 @@
-NAME        := webserver
+NAME_BASE   := webserver
 CXX         := c++
 CXX_FLAGS   := -Wall -Werror -Wextra -std=c++98 -MMD -MP
 GTEST_FLAGS := -lgtest -lgtest_main -lpthread
@@ -79,14 +79,17 @@ $(info [mk] FILTER_ARG=$(FILTER_ARG))
 endif
 
 ifdef MODULE_ARG
-	NEED_DIRS := $(call closure,$(MODULE_ARG))
-
 	ifndef IS_TEST
 		$(error Can only select module for test compilation. Can't link without main — try: make test $(MODULE_ARG))
 	endif
+	NEED_DIRS     := $(call closure,$(MODULE_ARG))
+	SELECTED_TEST := $(foreach m,$(MODULE_ARG),$($(m)_TEST_SRCS))
 else
-	NEED_DIRS := $(MODULES)
+	NEED_DIRS     := $(MODULES)
+	SELECTED_TEST := $(foreach m,$(NEED_DIRS),$($(m)_TEST_SRCS))
 endif
+
+SELECTED_SRC := $(foreach m,$(NEED_DIRS),$($(m)_SRCS))
 
 # ---- Guard: empty closure means a cycle or a missing DEPS_ ----
 ifeq ($(strip $(NEED_DIRS)),)
@@ -96,9 +99,6 @@ endif
 $(if $(TRACE),$(info [mk] NEED_DIRS=$(NEED_DIRS)))
 
 # ---- Object lists ----
-SELECTED_SRC   := $(foreach m,$(NEED_DIRS),$($(m)_SRCS))
-SELECTED_TEST  := $(foreach m,$(NEED_DIRS),$($(m)_TEST_SRCS))
-
 ifeq ($(strip $(SELECTED_SRC)),)
 	$(error [mk] no sources for NEED_DIRS='$(NEED_DIRS)' — check <dir>_SRCS names match module dirs)
 endif
@@ -115,7 +115,7 @@ else
 endif
 
 # ---- Binary name per mode ----
-NAME		:= $(NAME)$(if $(IS_DEBUG),_debug)$(if $(IS_TEST),_tests)
+NAME		:= $(NAME_BASE)$(if $(IS_DEBUG),_debug)$(if $(IS_TEST),_tests)
 UTILS_LIB   := $(UTILS_DIR)/libutils$(if $(IS_DEBUG),_debug).a
 
 # ---- Header dependency tracking (scoped to selection) ----
@@ -152,7 +152,7 @@ $(UTILS_LIB):
 	@$(MAKE) -C $(UTILS_DIR) $(if $(IS_DEBUG),debug) NAME=$(notdir $@)
 
 # ---- Run helper ----
-RUN          := $(if $(IS_DEBUG),gdb --args,)
+RUN := $(if $(IS_DEBUG),gdb -ex 'handle SIGPIPE nostop noprint pass' --args,)
 GTEST_FILTER := $(if $(FILTER_ARG),--gtest_filter=*$(FILTER_ARG)*)
 
 define run_tests

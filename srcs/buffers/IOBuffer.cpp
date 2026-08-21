@@ -29,6 +29,8 @@ ssize_t IOBuffer::writeOut()
 	return bytesSent;
 }
 
+bool IOBuffer::done() const { return IBuffer::done() && !_curSegment; }
+
 /* Protected Methods */
 bool IOBuffer::takeSegment()
 {
@@ -56,7 +58,7 @@ Segment::e_comparison IOBuffer::compareUnsent(const StrView &expected) const
 	if (!_curSegment)
 		return _segList.compare(expected);
 
-	StrView unsent = _curSegment->unsentView();
+	StrView unsent = _curSegment->unusedView();
 	if (!expected.compare(unsent, unsent.size()))
 		return Segment::MISMATCH;
 

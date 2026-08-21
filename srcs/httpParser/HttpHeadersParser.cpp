@@ -5,52 +5,51 @@
 
 using std::make_pair;
 
-// Public constructors and destructors
-HttpHeadersParser::HttpHeadersParser(StrViewMap *headers, uchar &mainState,
-									 HttpToken &token, Expect &expect) :
+HttpHeadersParser::HttpHeadersParser(StrViewMap &headers, HttpToken &token,
+									 Expect &expect) :
 	_token(token),
 	_expect(expect),
 	_state(KEY),
-	_mainState(mainState),
-	_headers(headers) {}
+	_headers(headers)
+{
+}
 
 HttpHeadersParser::~HttpHeadersParser() {}
 
-// Public Methods
-
-void HttpHeadersParser::parseHeaders(const uchar curState) {
-	while (!_token.needsMoreInput() && _mainState == curState) {
+bool HttpHeadersParser::parseHeaders()
+{
+	while (true) {
 		switch (_state) {
 		case KEY:
-			_token.loadNextOfType(Token::WORD, "Http header key or eof");
+			// if new line end of headers
+			if (_token.isNewLine())
+				return _token.consumeNewLine(); // DONE
 			if (_token.needsMoreInput())
-				return;
-			_state = VALUE;
-			_key = _token.getStrV();
+				return ONGOING;
 
+			if (!_token.loadNextWord())
+				return ONGOING;
+			_key = _token.getStrV();
 			if (*_key.end() != ':')
 				throw _token.parsingErr(":");
 			_key.removeSuffix(1);
+			_state = VALUE;
+			// fallthrough
 
 		case VALUE:
 			_token.loadNextStr("http header Value");
 			if (_token.needsMoreInput())
-				return;
-			_state = LINEEND;
+				return ONGOING;
 			_value = _token.getStrV();
+			_headers.insert(make_pair(_key, _value));
+			_state = NEWLINE;
+			// fallthrough
 
-			switch (_token.handleNewline()) {
-			case HttpToken::ENDOFILE:
-				return;
-			case HttpToken::DOUBLE:
-				_headers->insert(make_pair(_key, _value));
-				_state = KEY;
-				_mainState++;
-				return;
-			case HttpToken::SINGLE: // fallthrough
-				_headers->insert(make_pair(_key, _value));
-				_state = KEY;
-			}
+		case NEWLINE:
+			if (!_token.consumeNewLine())
+				return ONGOING;
+			_state = KEY;
+			break;
 		}
 	}
 }

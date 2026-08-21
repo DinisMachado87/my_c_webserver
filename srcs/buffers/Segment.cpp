@@ -7,7 +7,7 @@
 /* Constructors */
 Segment::Segment() :
 	_written(0),
-	_sent(0),
+	_used(0),
 	_prev(NULL),
 	_next(NULL)
 {
@@ -48,7 +48,7 @@ void Segment::poison() { std::memset(_data, 0, RECV_SIZE); }
 void Segment::clearCursors()
 {
 	_written = 0;
-	_sent = 0;
+	_used = 0;
 }
 
 /* Methods */
@@ -57,7 +57,7 @@ void Segment::reset()
 	_prev = NULL;
 	_next = NULL;
 	_written = 0;
-	_sent = 0;
+	_used = 0;
 }
 
 ssize_t Segment::readFrom(const Reader &reader)
@@ -84,17 +84,17 @@ ssize_t Segment::sendTo(const Writer &writer)
 {
 	if (readable() == 0)
 		return 0;
-	ssize_t n = writer.writeOne(_data + _sent, readable());
+	ssize_t n = writer.writeOne(_data + _used, readable());
 	if (n > 0)
-		_sent += static_cast<size_t>(n);
+		_used += static_cast<size_t>(n);
 	return n;
 }
 
 /* View getters */
 
-StrView Segment::unsentView() const
+StrView Segment::unusedView() const
 {
-	return StrView(_data + _sent, readable());
+	return StrView(_data + _used, readable());
 }
 
 StrView Segment::writtenView() const { return StrView(_data, used()); }
@@ -107,12 +107,17 @@ StrView Segment::lastWritten(size_t n) const
 
 /* Capacity Getters */
 
-bool Segment::allSent() const { return _sent >= _written; }
-size_t Segment::readable() const { return _written - _sent; }
+bool Segment::allSent() const { return _used >= _written; }
+size_t Segment::readable() const { return _written - _used; }
 size_t Segment::writable() const { return RECV_SIZE - _written; }
 size_t Segment::used() const { return _written; }
 
 /* Comparison */
+void Segment::advanceUsed(size_t n)
+{
+	assert(n <= readable());
+	_used += n;
+}
 
 Segment::e_comparison Segment::compare(const StrView &expected) const
 {

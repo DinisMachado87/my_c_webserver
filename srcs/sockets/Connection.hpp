@@ -5,24 +5,23 @@
 #include "HttpParser.hpp"
 #include "Response.hpp"
 #include "Server.hpp"
-#include "webServ.hpp"
 #include <cstddef>
 #include <sys/epoll.h>
 
-/* Client connection. Owns a fixed-size ring buffer of Responses
- * so pipelined requests can be parsed while earlier responses
- * are still being sent. */
+/* Client connection. Holds the single Response in flight — the next
+ * request is not parsed until the current response is fully sent. */
 class Connection : public ASocket
 {
 private:
-	enum _handleInState { REQUEST, RESPONSE, INITBODY, LOOPBODY };
 	HttpParser _http;
-	Response *_responses[RESPONSES_CUE_SIZE]; // ring buffer
-	Response *_responseReceivingBody;		  // slot currently receiving body
-	size_t _cur;							  // oldest unsent response
-	size_t _back;							  // next free slot
+	Response *_response;
 
-	uchar _handleInState;
+	enum e_handleInState {
+		REQUEST,
+		INITBODY,
+		LOOPBODY,
+		DONE_READING
+	} _handleInState;
 
 	/* Explicit disables */
 	Connection(const Connection &other);

@@ -52,5 +52,6 @@ public:
 	/* Methods */
 	// Returns bytes sent, 0 if empty, -1 on error.
 	virtual ssize_t writeOut();
+	virtual bool done() const;
 	Segment::e_comparison compareUnsent(const StrView &expected) const;
 };

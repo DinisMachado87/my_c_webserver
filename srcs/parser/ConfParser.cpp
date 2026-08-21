@@ -214,8 +214,9 @@ void ConfParser::parseMethod(Overrides &ov)
 			if (ov._allowedMethods != DEFAULT) {
 				ov._set |= F_METHODS;
 				return;
-			}
-		default: // fallthrough
+			} // fallthrough
+
+		default:
 			throw parsingErr("Method definition");
 		}
 	}

@@ -59,39 +59,50 @@ const char *Token::findEndQuote(const char *str) const
 	}
 }
 
+uchar Token::endOfInput(const char *curChar)
+{
+	const char *end = _parsingStr.end();
+	_needsMoreInput = true;
+	_parsingStr.setStart(curChar);
+	_parsingStr.setSize(end - curChar); // preserve carry for carryOver
+	return _type = ENDOFILE;
+}
+
 uchar Token::loadNext() { return loadNextCore(false); }
 uchar Token::loadNextStr() { return loadNextCore(true); }
 uchar Token::loadNextCore(const bool keepSpaces)
 {
 	const char *cur = _parsingStr.data();
+	const char *end = _parsingStr.end();
 
-	while (1) {
+	while (cur < end) {
 		_type = _isDelimiter[(uchar)(*cur)];
 		switch (_type) {
-		case ENDOFILE:
-			_needsMoreInput = true;
-			_parsingStr.setStart(cur);
-			_parsingStr.setSize(0);
-			return ENDOFILE;
+		case ENDOFILE: // config only: explicit '\0' terminator
+			return endOfInput(cur);
 
 		case SPACE:
 			cur++;
 			break;
 
 		case COMMENT:
-			while (*cur && *cur != '\n')
+			while (cur < end && *cur != '\n')
 				cur++;
 			break;
 
 		case WORD: {
 			const char *tokStart = cur;
-			if (keepSpaces)
-				while (WORD == _isDelimiter[(uchar)(*cur)]
-					   || SPACE == _isDelimiter[(uchar)(*cur)])
+			if (keepSpaces) // Loop duplicated to avoid comparing keepspaces for
+							// each char
+				while (cur < end
+					   && (WORD == _isDelimiter[(uchar)(*cur)]
+						   || SPACE == _isDelimiter[(uchar)(*cur)]))
 					cur++;
 			else
-				while (WORD == _isDelimiter[(uchar)(*cur)])
+				while (cur < end && WORD == _isDelimiter[(uchar)(*cur)])
 					cur++;
+			if (cur == end) // word may continue next read — carry whole word
+				return endOfInput(tokStart);
 			_strV = StrView(tokStart, cur - tokStart);
 			_parsingStr.removePrefix(cur - _parsingStr.data());
 			return _type = WORD;
@@ -100,10 +111,9 @@ uchar Token::loadNextCore(const bool keepSpaces)
 		case QUOTE: {
 			cur++;
 			const char *tokStart = cur;
-			const char *tokEnd = findEndQuote(cur);
-			const char *closingQuote = tokEnd + 1;
+			const char *tokEnd = findEndQuote(cur); // config path, in-memory
 			_strV = StrView(tokStart, tokEnd - tokStart);
-			_parsingStr.removePrefix(closingQuote - _parsingStr.data());
+			_parsingStr.removePrefix((tokEnd + 1) - _parsingStr.data());
 			return _type = WORD;
 		}
 
@@ -113,6 +123,7 @@ uchar Token::loadNextCore(const bool keepSpaces)
 			return _type;
 		}
 	}
+	return endOfInput(cur); // ran off the end
 }
 
 uchar Token::loadNextOfType(uchar type, const char *errStr)

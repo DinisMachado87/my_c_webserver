@@ -13,7 +13,8 @@
 
 class Server;
 
-class Logger {
+class Logger
+{
 	// STATIC SINGLETON
 public:
 	static Logger *_loggerPtr;
@@ -43,14 +44,13 @@ public:
 				   const int *nums, size_t numCount, const int socket);
 	void logError(const char *label, const std::runtime_error &errorMsg,
 				  const int socket = 0);
-	std::string traced(const char *msg, const char *file, const int line,
-					   const char *func);
 	void logTitle(const char *msg);
 	void logServer(const char *msg, const Server &server);
 
 	template <typename T>
 	void logObj(const char *msg, const T *obj,
-				void (T::*method)(std::ostream &) const) {
+				void (T::*method)(std::ostream &) const)
+	{
 		if (CONTENT > _level)
 			return;
 		std::stringstream stream;
@@ -59,7 +59,8 @@ public:
 		print(CONTENT, stream);
 	}
 
-	template <typename T> void logObj(const char *msg, const T &obj) {
+	template <typename T> void logObj(const char *msg, const T &obj)
+	{
 		if (CONTENT > _level)
 			return;
 		std::stringstream stream;
@@ -88,58 +89,58 @@ private:
 
 #ifdef LOGGING
 // Core
-#define LOG_INTERNAL(level, label, msg, len, num, socket, host)                \
+#define LOG_INTERNAL(level, label, msg, len, num, socket, host) \
 	Logger::logger()->log(level, label, msg, len, num, socket, host)
-#define LOGNUMARR_INTERNAL(level, label, msg, nums, count, socket)             \
+#define LOGNUMARR_INTERNAL(level, label, msg, nums, count, socket) \
 	Logger::logger()->logNumArr(level, label, msg, nums, count, socket)
 
 // Labeled
-#define LOG_LABELED(level, label, msg)                                         \
+#define LOG_LABELED(level, label, msg) \
 	LOG_INTERNAL(level, label, msg, 0, NONUM, 0, INT_MAX)
-#define LOGNUM_LABELED(level, label, msg, num)                                 \
+#define LOGNUM_LABELED(level, label, msg, num) \
 	LOG_INTERNAL(level, label, msg, 0, num, 0, INT_MAX)
-#define LOGSOCK_LABELED(level, label, msg, sock)                               \
+#define LOGSOCK_LABELED(level, label, msg, sock) \
 	LOG_INTERNAL(level, label, msg, 0, NONUM, sock, INT_MAX)
-#define LOGSOCKHOST_LABELED(level, label, msg, sock, host)                     \
+#define LOGSOCKHOST_LABELED(level, label, msg, sock, host) \
 	LOG_INTERNAL(level, label, msg, 0, NONUM, sock, host)
 
 // Base
 #define LOG(level, msg) LOG_INTERNAL(level, NULL, msg, 0, NONUM, 0, INT_MAX)
-#define LOGNUM(level, msg, num)                                                \
+#define LOGNUM(level, msg, num) \
 	LOG_INTERNAL(level, NULL, msg, 0, num, 0, INT_MAX)
-#define LOGSOCK(level, msg, socket)                                            \
+#define LOGSOCK(level, msg, socket) \
 	LOG_INTERNAL(level, NULL, msg, 0, NONUM, socket, INT_MAX)
-#define LOGSOCKNUM(level, msg, num, socket)                                    \
+#define LOGSOCKNUM(level, msg, num, socket) \
 	LOG_INTERNAL(level, NULL, msg, 0, num, socket, INT_MAX)
-#define LOGSOCKHOST(level, msg, port, host, socket)                            \
+#define LOGSOCKHOST(level, msg, port, host, socket) \
 	LOG_INTERNAL(level, NULL, msg, 0, port, socket, host)
 
 // TRUNC
-#define LOGTRUNC(level, msg, len)                                              \
+#define LOGTRUNC(level, msg, len) \
 	LOG_INTERNAL(level, NULL, msg, len, NONUM, 0, INT_MAX)
 
 // Num Pair
-#define LOGSOCKNUM2_LABELED(level, label, msg, v1, v2, socket)                 \
-	do {                                                                       \
-		int _arr[] = {v1, v2};                                                 \
-		LOGNUMARR_INTERNAL(level, label, msg, _arr, 2, socket);                \
+#define LOGSOCKNUM2_LABELED(level, label, msg, v1, v2, socket)  \
+	do {                                                        \
+		int _arr[] = {v1, v2};                                  \
+		LOGNUMARR_INTERNAL(level, label, msg, _arr, 2, socket); \
 	} while (0)
 
-#define LOGNUMS2(level, msg, v1, v2)                                           \
+#define LOGNUMS2(level, msg, v1, v2) \
 	LOGSOCKNUM2_LABELED(level, NULL, msg, v1, v2, 0)
 
-#define LOGSOCKNUMS2(level, msg, v1, v2, socket)                               \
+#define LOGSOCKNUMS2(level, msg, v1, v2, socket) \
 	LOGSOCKNUM2_LABELED(level, NULL, msg, v1, v2, socket)
 
-#define LOGNUMARR2_LABELED(level, label, msg, v1, v2)                          \
+#define LOGNUMARR2_LABELED(level, label, msg, v1, v2) \
 	LOGSOCKNUM2_LABELED(level, label, msg, v1, v2, 0)
 
 // Error
-#define LOG_ERROR_SOCK_LABELED(label, errMsg, socket)                          \
+#define LOG_ERROR_SOCK_LABELED(label, errMsg, socket) \
 	Logger::logger()->logError(label, errMsg, socket)
-#define LOG_ERROR_LABELED(label, errMsg)                                       \
+#define LOG_ERROR_LABELED(label, errMsg) \
 	LOG_ERROR_SOCK_LABELED(label, errMsg, 0)
-#define LOG_ERROR_SOCK(errMsg, socket)                                         \
+#define LOG_ERROR_SOCK(errMsg, socket) \
 	LOG_ERROR_SOCK_LABELED(NULL, errMsg, socket)
 #define LOG_ERROR(errMsg) LOG_ERROR_SOCK_LABELED(NULL, errMsg, 0)
 
@@ -148,8 +149,6 @@ private:
 #define LOG_SERVER(msg, server) Logger::logger()->logServer(msg, server)
 #define LOG_OBJ(msg, obj) Logger::logger()->logObj(msg, obj)
 #define LOG_OBJ_FUNC(msg, obj, func) Logger::logger()->logObj(msg, obj, func)
-#define TRACED(msg)                                                            \
-	Logger::logger()->traced(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #else
 #define LOG_INTERNAL(level, label, msg, len, num, socket, host) (void)0
@@ -172,7 +171,6 @@ private:
 #define LOG_ERROR_SOCK(errMsg, socket) (void)0
 #define LOG_ERROR_LABELED(label, errMsg) (void)0
 #define LOG_ERROR_SOCK_LABELED(label, errMsg, socket) (void)0
-#define TRACED(str, __FILE__, __LINE__, __FUNCTION__) (void)0
 #define LOGNUMARR(level, msg, nums, count) (void)0
 #define LOGSOCKNUMARR(level, msg, nums, count, socket) (void)0
 #define LOGNUMARR_LABELED(level, label, msg, nums, count) (void)0

@@ -1,4 +1,5 @@
 #include "ResponseHeaders.hpp"
+#include "IBuffer.hpp"
 #include <cstdio>
 #include <cstring>
 
@@ -32,7 +33,7 @@ void ResponseHeaders::setIfMissing(const StrView &key, size_t numValue)
 	StrViewMap::setIfMissing(key, toScratch(tmp, static_cast<size_t>(len)));
 }
 
-void ResponseHeaders::serialize(StreamBuffer &out) const
+void ResponseHeaders::serialize(IBuffer &out) const
 {
 	for (size_t i = 0; i < size(); i++) {
 		const std::pair<StrView, StrView> &p = at(i);

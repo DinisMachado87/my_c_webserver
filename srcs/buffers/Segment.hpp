@@ -14,7 +14,13 @@ class BufferManager;
 class SegmentList;
 
 /* Fixed-size buffer with intrusive links — chains without
- * allocating. Owns its cursors, exposes views not raw data.
+ * allocating.
+ *
+ * Owns, tracks and returns its cursors, exposes views not raw data:
+ * - writenView;
+ * - unsentView;
+ * - lastWritten;
+ *
  * Links + constructor private: only pool and list can link. */
 class Segment
 {
@@ -22,7 +28,7 @@ private:
 	/* State */
 	char _data[RECV_SIZE];
 	size_t _written;
-	size_t _sent;
+	size_t _used;
 	Segment *_prev;
 	Segment *_next;
 
@@ -52,13 +58,14 @@ public:
 	bool allSent() const;
 
 	StrView writtenView() const;
-	StrView unsentView() const;
+	StrView unusedView() const;
 	StrView lastWritten(size_t n) const;
 
 	size_t readable() const;
 	size_t writable() const;
 	size_t used() const;
 
+	void advanceUsed(size_t n);
 	e_comparison compare(const StrView &expected) const;
 };
 

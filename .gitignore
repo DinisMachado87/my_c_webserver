@@ -6,4 +6,9 @@ compile_commands.json
 http_notes.md
 serverLog.txt
 *.txt
-context
+context/
+html/
+Doxyfile
+notes
+.gitignore
+

@@ -1,7 +1,8 @@
 #include "PathConsolidator.hpp"
 #include "Colors.hpp"
-#include "Logger.hpp"
 #include "Path.hpp"
+#include "Traced.hpp"
+#include "webServ.hpp"
 #include <climits>
 #include <iostream>
 #include <stdexcept>
@@ -16,10 +17,13 @@ using std::string;
 PathConsolidator::PathConsolidator(const StrView &pathStr) :
 	_writeIdx(0),
 	_hasChanges(false),
-	_path(pathStr) {}
+	_path(pathStr)
+{
+}
 
 // Static
-Path PathConsolidator::consolidate(const StrView &pathStr) {
+Path PathConsolidator::consolidate(const StrView &pathStr)
+{
 	PathConsolidator c(pathStr);
 
 	c.isSingleSlash();
@@ -30,7 +34,8 @@ Path PathConsolidator::consolidate(const StrView &pathStr) {
 	return Path(c._path, c._query, c._fragment);
 }
 
-bool PathConsolidator::isSingleSlash() {
+bool PathConsolidator::isSingleSlash()
+{
 	if (_path.size() == 2 && _path.compare("/.", 2))
 		_path.setSize(1);
 	if (_path.size() <= 1)
@@ -38,7 +43,8 @@ bool PathConsolidator::isSingleSlash() {
 	return false;
 }
 
-void PathConsolidator::split() {
+void PathConsolidator::split()
+{
 	uint curOffset = 0;
 	StrView cur = _path;
 	size_t nextDivider = _path.segmentUntil('/', curOffset, cur);
@@ -64,7 +70,8 @@ void PathConsolidator::split() {
 		_segments.push_back(cur);
 }
 
-void PathConsolidator::normalize() {
+void PathConsolidator::normalize()
+{
 	for (size_t i = 0; i < _segments.size(); i++) {
 		StrView seg = _segments[i];
 		bool isLastSegment = (i == _segments.size() - 1);
@@ -85,7 +92,8 @@ void PathConsolidator::normalize() {
 	}
 }
 
-void PathConsolidator::rebuild() {
+void PathConsolidator::rebuild()
+{
 	if (_writeIdx == 0) {
 		_path.setSize(1);
 		return;
@@ -100,7 +108,8 @@ void PathConsolidator::rebuild() {
 }
 
 void PathConsolidator::printSegments(size_t i, size_t writeIdx,
-									 size_t deletedSegs) {
+									 size_t deletedSegs)
+{
 	size_t len = _segments.size() - deletedSegs;
 	for (size_t j = 0; j < _segments.size(); j++) {
 		const bool wi = (j == writeIdx);

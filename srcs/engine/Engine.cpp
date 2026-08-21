@@ -1,11 +1,12 @@
 #include "Engine.hpp"
 #include "ASocket.hpp"
+#include "ClientClosed.hpp"
 #include "ConfParser.hpp"
 #include "Connection.hpp"
-#include "Exception.hpp"
 #include "Listening.hpp"
 #include "Logger.hpp"
 #include "Server.hpp"
+#include "Traced.hpp"
 #include "webServ.hpp"
 #include <bits/types/error_t.h>
 #include <cerrno>
@@ -28,9 +29,12 @@ using std::vector;
 
 // Public constructors and destructors
 Engine::Engine() :
-	_fdEpoll(-1) {}
+	_fdEpoll(-1)
+{
+}
 
-Engine::~Engine() {
+Engine::~Engine()
+{
 	map<int, ASocket *>::iterator socket = _sockets.begin();
 	while (socket != _sockets.end())
 		delete (socket++)->second;
@@ -44,18 +48,21 @@ Engine::~Engine() {
 }
 
 // Error handeling
-runtime_error Engine::handleError(const string errMsg, const int err) {
+runtime_error Engine::handleError(const string errMsg, const int err)
+{
 	return runtime_error(errMsg + " :" + strerror(err));
 }
 
 // Public Methods
-void Engine::epoll_init() {
+void Engine::epoll_init()
+{
 	_fdEpoll = epoll_create(1);
 	if (_fdEpoll < 0)
 		throw handleError("Error Epoll_create: ", errno);
 }
 
-ASocket *Engine::getSocket(int fd) {
+ASocket *Engine::getSocket(int fd)
+{
 	map<int, ASocket *>::iterator socket = _sockets.find(fd);
 	if (socket != _sockets.end())
 		return socket->second;
@@ -63,7 +70,8 @@ ASocket *Engine::getSocket(int fd) {
 }
 
 void Engine::setEventTo(int epollFd, uint operation, uint eventType,
-						int socketFd, ASocket *socket) {
+						int socketFd, ASocket *socket)
+{
 	struct epoll_event event;
 	event.events = eventType;
 	event.data.ptr = socket;
@@ -72,7 +80,8 @@ void Engine::setEventTo(int epollFd, uint operation, uint eventType,
 	throw handleError(TRACED("Epool_ctr"), errno);
 }
 
-void Engine::addSocket(ASocket *socket) {
+void Engine::addSocket(ASocket *socket)
+{
 	if (!socket)
 		throw handleError("Error null socket", errno);
 
@@ -85,24 +94,27 @@ void Engine::addSocket(ASocket *socket) {
 			   socket);
 }
 
-void Engine::deleteSocket(ASocket *socket) {
+void Engine::deleteSocket(ASocket *socket)
+{
 	int fd = socket->getFd();
 	try {
 		setEventTo(_fdEpoll, EPOLL_CTL_DEL, 0, fd, socket);
 		_sockets.erase(fd);
 		delete socket;
 		LOGSOCK(Logger::LOG, "Deleted socket", fd);
-	} catch (runtime_error &err) {
+	} catch (const runtime_error &err) {
 		throw runtime_error(TRACED(err.what()));
 	}
 }
 
-void Engine::buildServers(string &config) {
+void Engine::buildServers(string &config)
+{
 	ConfParser parser(config, _servers, _defaultsVecBuf);
 	parser.createServers();
 }
 
-void Engine::createSockets() {
+void Engine::createSockets()
+{
 	vector<Server *>::iterator server = _servers.begin();
 
 	for (; server != _servers.end(); ++server) {
@@ -118,7 +130,8 @@ void Engine::createSockets() {
 }
 
 void Engine::logFlagUpdates(ASocket *socket, uint32_t events,
-							uint32_t newEvents) {
+							uint32_t newEvents)
+{
 	stringstream stream;
 	bool newEventsIn = newEvents & EPOLLIN;
 	bool newEventsOut = newEvents & EPOLLOUT;
@@ -134,7 +147,8 @@ void Engine::logFlagUpdates(ASocket *socket, uint32_t events,
 		LOGSOCK(Logger::LOG, "Adding EPOLLOUT\n", socket->getFd());
 }
 
-void Engine::updateFlags(ASocket *socket) {
+void Engine::updateFlags(ASocket *socket)
+{
 	uint32_t events = socket->getCurEvents();
 	uint32_t newEvents = socket->getEventsNextLoop();
 
@@ -145,7 +159,8 @@ void Engine::updateFlags(ASocket *socket) {
 	}
 }
 
-void Engine::pollLoop() {
+void Engine::pollLoop()
+{
 	struct epoll_event events[MAX_EVENTS];
 	int nFds = -1;
 
@@ -190,13 +205,14 @@ void Engine::pollLoop() {
 	}
 }
 
-void Engine::run(string &config) {
+void Engine::run(string &config)
+{
 	try {
 		epoll_init();
 		buildServers(config);
 		createSockets();
 		pollLoop();
-	} catch (runtime_error err) {
+	} catch (const runtime_error &err) {
 		LOG_ERROR(err);
 	}
 }

@@ -9,15 +9,18 @@ RequestLine::RequestLine() {}
 RequestLine::RequestLine(RequestPath path, uchar method, bool http1_1) :
 	_path(path),
 	_method(method),
-	_http1_1(http1_1) {}
+	_http1_1(http1_1)
+{
+}
 
 RequestLine::~RequestLine() {}
 
 // Public Methods
 
 uchar RequestLine::getMethod() const { return _method; };
-RequestPath &RequestLine::requestPath() { return _path; }
-const StrView &RequestLine::getPathFragment() const {
+const RequestPath &RequestLine::requestPath() const { return _path; }
+const StrView &RequestLine::getPathFragment() const
+{
 	return _path.getFragment();
 }
 const StrView &RequestLine::getPathQuery() const { return _path.getQuery(); }
@@ -25,11 +28,13 @@ const StrView &RequestLine::getPathQuery() const { return _path.getQuery(); }
 // Print Methods
 const char *RequestLine::getMethodStr() const { return g_methods[_method]; };
 
-void RequestLine::print(std::ostream &stream) const {
+void RequestLine::print(std::ostream &stream) const
+{
 	stream << "Method: " << getMethodStr() << "\n" << _path << "\n";
 }
 
-std::ostream &operator<<(std::ostream &os, const RequestLine &reqLine) {
+std::ostream &operator<<(std::ostream &os, const RequestLine &reqLine)
+{
 	reqLine.print(os);
 	return os;
 }

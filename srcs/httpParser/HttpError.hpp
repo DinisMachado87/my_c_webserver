@@ -19,6 +19,7 @@ public:
 
 	const HttpStatus &getStatus() const;
 	uint getCode() const;
+	~HttpError() throw();
 	const char *what() const throw();
 	const std::ostream &print(std::ostream &stream) const;
 };

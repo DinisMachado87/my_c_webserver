@@ -53,7 +53,7 @@ bool ChunkEncoder::frameSegment()
 	if (!takeSegment())
 		return false;
 
-	StrView payload = _curSegment->unsentView();
+	StrView payload = _curSegment->unusedView();
 	_hex.parseFromNum(payload.size());
 	_iovSections.reset();
 	_iovSections.add(StrView(_hex.str(), _hex.strLen()));

@@ -86,6 +86,8 @@ protected:
 
 	friend class ConfParser;
 
+	uchar endOfInput(const char *curChar);
+
 private:
 	/* Explicit disables */
 	Token();

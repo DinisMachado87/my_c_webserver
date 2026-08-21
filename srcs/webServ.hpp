@@ -12,10 +12,10 @@
 /* Boolean semantics for readability */
 #define TRACK true
 #define UNTRACKED false
-#define AFTER true
-#define BEFORE false
+
 #define ONGOING false
 #define DONE true
+
 #define EMPTY -1
 
 /* HTTP */
@@ -33,10 +33,10 @@ enum methods { DEFAULT, GET, POST, DELETE };
 
 /* Epoll and I/O sizing */
 #define MAX_EVENTS 1024
-#define RESPONSES_CUE_SIZE 10
 #define TIMEOUT 1000
 #define RECV_SIZE 1000
-#define CHUNK_SIZE 1000
+#define SLAB_START_SIZE 8
+enum e_FdType { FD_SOCKET, FD_FILE };
 
 /* Logger compile-time config */
 #define LOGLEVEL CONTENT

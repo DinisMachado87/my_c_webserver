@@ -1,15 +1,5 @@
 #pragma once
 
-enum state {
-	REQUEST_LINE,
-	HEADERS,
-	VALIDATE,
-	BODY,
-	SET_CHUNK_SIZE,
-	SET_BODY_SIZE,
-	CHUNKED_BODY,
-	NO_BODY,
-	MAKE_ERROR_RESPONSE,
-	RETURN,
-	STATE_SIZE
-};
+/* HttpParser state machine. REQUEST_LINE → HEADERS → ROUTE.
+ * Each sub-parser advances _mainState when its stage completes. */
+enum state { REQUEST_LINE, HEADERS, ROUTE, STATE_SIZE };

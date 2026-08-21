@@ -19,7 +19,11 @@ public:
 
 	/* Methods */
 	// Returns bytes read, 0 on EOF, -1 on error.
-	ssize_t readIn();
+	virtual ssize_t readIn();
+
+	// Only meaningful before the first readIn() — afterwards the bytes land
+	// behind whatever the reader already fetched. Returns bytes written.
+	size_t append(const StrView &data);
 
 	bool inClosed() const;
 	virtual bool done() const;
@@ -39,3 +43,9 @@ private:
 	IBuffer(const IBuffer &other);
 	IBuffer &operator=(const IBuffer &other);
 };
+
+inline IBuffer &operator<<(IBuffer &buf, const StrView &data)
+{
+	buf.append(data);
+	return buf;
+}

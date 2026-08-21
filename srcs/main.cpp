@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 		string config = readFile(configPath);
 		Engine engine;
 		engine.run(config);
-	} catch (runtime_error err) {
+	} catch (const runtime_error &err) {
 		LOG_ERROR(err);
 		LOG(Logger::LOG, "Exiting gracefully from Error");
 		Logger::deleteLogger();

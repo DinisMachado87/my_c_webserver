@@ -1,61 +1,62 @@
 #include "RequestLineParser.hpp"
 #include "Expect.hpp"
 #include "HttpError.hpp"
-#include "HttpStates.hpp"
 #include "HttpToken.hpp"
 #include "Logger.hpp"
 #include "RequestLine.hpp"
 #include "RequestPathConsolidator.hpp"
+#include "Traced.hpp"
+#include "webServ.hpp"
 #include <stdexcept>
 
 using std::runtime_error;
 
-RequestLineParser::RequestLineParser(HttpToken &token, Expect &expect,
-									 RequestLine &requestline,
-									 uchar &mainState) :
+RequestLineParser::RequestLineParser(RequestLine &requestline, HttpToken &token,
+									 Expect &expect) :
+	_requestLine(requestline),
 	_token(token),
 	_expect(expect),
-	_requestLine(requestline),
-	_state(METHOD),
-	_mainState(mainState)
+	_state(METHOD)
 {
 }
 
 RequestLineParser::~RequestLineParser() {}
 
-void RequestLineParser::parse()
+bool RequestLineParser::parse()
 {
 	try {
 		switch (_state) {
 		case METHOD:
-			_token.loadNextOfType(Token::WORD, "Http Method");
+			if (!_token.loadNextWord())
+				return ONGOING;
 			_requestLine._method = _expect.method();
 			if (DEFAULT == _requestLine._method)
 				throw HttpError(HttpStatus::BAD_REQUEST);
 			_state = PATH;
+			// fallthrough
 
-		case PATH: // fallthrough
+		case PATH:
 			_expect.path(&_rawPath);
+			if (_token.needsMoreInput())
+				return ONGOING;
 			_requestLine._path = RequestPathConsolidator::consolidate(_rawPath);
 			_state = HTTP;
+			// fallthrough
 
-		case HTTP: // fallthrough
-			_token.loadNext();
+		case HTTP:
+			if (!_token.loadNextWord())
+				return ONGOING;
 			if (!_token.compare("HTTP/1.1")) {
 				if (_token.compare("HTTP/1.0"))
 					_requestLine._http1_1 = false;
 				else
 					throw HttpError(HttpStatus::VERSION_NOT_SUPPORTED);
 			}
+			_state = NEWLINE;
+			// fallthrough
 
 		case NEWLINE:
-			switch (_token.handleNewline()) {
-			case HttpToken::SINGLE:
-				_mainState = HEADERS;
-				return;
-			case HttpToken::DOUBLE:
-				_mainState = RETURN;
-			}
+			return _token.consumeNewLine();
 		}
 	} catch (const runtime_error &err) {
 		throw runtime_error(TRACED(err.what()));
@@ -63,4 +64,5 @@ void RequestLineParser::parse()
 		LOG_LABELED(Logger::WARNING, "HttpError: ", err.what());
 		throw;
 	}
+	return DONE;
 }

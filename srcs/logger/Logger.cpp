@@ -40,11 +40,14 @@ const char *Logger::_color[]
 
 // Public constructors and destructors
 Logger::Logger() :
-	_level(LOGLEVEL) {}
+	_level(LOGLEVEL)
+{
+}
 
 Logger::~Logger() { _logFile.close(); }
 
-void Logger::deleteLogger() {
+void Logger::deleteLogger()
+{
 	delete _loggerPtr;
 	_loggerPtr = NULL;
 	const char *msg = "Deleted logger instance.\n";
@@ -52,7 +55,8 @@ void Logger::deleteLogger() {
 }
 
 // Public Methods
-Logger *Logger::logger() {
+Logger *Logger::logger()
+{
 	if (_loggerPtr)
 		return _loggerPtr;
 
@@ -68,7 +72,8 @@ Logger *Logger::logger() {
 	return _loggerPtr;
 }
 
-void Logger::print(const int level, stringstream &stream) {
+void Logger::print(const int level, stringstream &stream)
+{
 	string str = stream.str();
 	const char *color = _color[level];
 	if (LOGTOCLI) {
@@ -83,7 +88,8 @@ void Logger::print(const int level, stringstream &stream) {
 		_logFile << str << endl;
 }
 
-void Logger::addHost(stringstream &stream, in_addr_t host) {
+void Logger::addHost(stringstream &stream, in_addr_t host)
+{
 	stream << " | Host: ";
 	uchar *octet = (uchar *)&host;
 	stream << (int)octet[0] << '.' << (int)octet[1] << '.' << (int)octet[2]
@@ -91,7 +97,8 @@ void Logger::addHost(stringstream &stream, in_addr_t host) {
 }
 
 void Logger::logError(const char *label, const runtime_error &errorMsg,
-					  const int socket) {
+					  const int socket)
+{
 	if (ERROR > _level)
 		return;
 
@@ -105,8 +112,8 @@ void Logger::logError(const char *label, const runtime_error &errorMsg,
 }
 
 void Logger::buildLogPrefix(stringstream &stream, const int level,
-							const char *label, const int socket,
-							in_addr_t host) {
+							const char *label, const int socket, in_addr_t host)
+{
 	stream << _clock.nowTime() << SEPARATOR;
 	stream << _labels[level];
 
@@ -121,7 +128,8 @@ void Logger::buildLogPrefix(stringstream &stream, const int level,
 		stream << '\n';
 }
 
-void Logger::appendMessage(stringstream &stream, const char *msg, size_t len) {
+void Logger::appendMessage(stringstream &stream, const char *msg, size_t len)
+{
 	if (len)
 		stream.write(msg, len);
 	else
@@ -129,7 +137,8 @@ void Logger::appendMessage(stringstream &stream, const char *msg, size_t len) {
 }
 
 void Logger::log(const int level, const char *label, const char *msg,
-				 size_t len, const int num, const int socket, in_addr_t host) {
+				 size_t len, const int num, const int socket, in_addr_t host)
+{
 	if (level > _level)
 		return;
 
@@ -143,7 +152,8 @@ void Logger::log(const int level, const char *label, const char *msg,
 }
 
 void Logger::logNumArr(const int level, const char *label, const char *msg,
-					   const int *nums, size_t numCount, const int socket) {
+					   const int *nums, size_t numCount, const int socket)
+{
 	if (level > _level)
 		return;
 
@@ -161,7 +171,8 @@ void Logger::logNumArr(const int level, const char *label, const char *msg,
 	print(level, stream);
 }
 
-void Logger::logTitle(const char *msg) {
+void Logger::logTitle(const char *msg)
+{
 	if (LOG > _level)
 		return;
 	stringstream stream;
@@ -169,14 +180,8 @@ void Logger::logTitle(const char *msg) {
 	print(TITLE, stream);
 }
 
-string Logger::traced(const char *msg, const char *file, const int line,
-					  const char *func) {
-	stringstream str;
-	str << file << ": " << line << " | " << func << "():\n\t " << msg;
-	return str.str();
-}
-
-void Logger::logServer(const char *msg, const Server &server) {
+void Logger::logServer(const char *msg, const Server &server)
+{
 	if (CONTENT > _level)
 		return;
 

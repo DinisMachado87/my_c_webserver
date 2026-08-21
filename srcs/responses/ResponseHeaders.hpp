@@ -1,11 +1,12 @@
 #pragma once
 
 #include "StrViewMap.hpp"
-#include "StreamBuffer.hpp"
 #include <cstddef>
 
+class IBuffer;
+
 /* StrViewMap with a scratch buffer for computed values (Content-Length etc.)
- * and a serializer that writes "Key: Value\r\n" pairs into a StreamBuffer.
+ * and a serializer that writes "Key: Value\r\n" pairs into a IBuffer.
  * Does NOT write the status line — caller handles that. */
 class ResponseHeaders : public StrViewMap
 {
@@ -32,5 +33,5 @@ public:
 	void setIfMissing(const StrView &key, size_t numValue);
 
 	// Writes "Key: Value\r\n" for each header + final "\r\n".
-	void serialize(StreamBuffer &out) const;
+	void serialize(IBuffer &out) const;
 };
