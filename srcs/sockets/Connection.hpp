@@ -40,8 +40,6 @@ public:
 	void handleOut();
 	/* Epoll */
 	uint32_t getEventsNextLoop();
-	bool isFull() const;
-	size_t recvToBuffer(char *buffer);
 };
 
 #endif

@@ -37,8 +37,9 @@ Response *HttpParser::recvAndParse()
 	try {
 		ssize_t n = _request->_buff.readIn();
 		if (n == RequestBuffer::CARRY_OVERFLOW)
-			throw(_state == REQUEST_LINE) ? HttpStatus::URI_TOO_LONG
-										  : HttpStatus::CONTENT_TOO_LARGE;
+			throw HttpError(_state == REQUEST_LINE
+								? HttpStatus::URI_TOO_LONG
+								: HttpStatus::CONTENT_TOO_LARGE);
 		if (n < 0)
 			return NULL; // EAGAIN/error — wait next epoll
 

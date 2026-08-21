@@ -49,12 +49,13 @@ ASocket *Connection::handleIn()
 			if (!_response)
 				return NULL;
 			LOGSOCK(Logger::LOG, "Received _response", _fd);
+			// fallthrough
 
-		case INITBODY: // fallthrough
-					   // _handleInState = readBody(true, "[INITBODY]", buffer,
-					   // bytesRead);
+		case INITBODY:
+			// _handleInState = readBody(true, "[INITBODY]", buffer,
+			// bytesRead);
 
-		default: // fallthrough
+		default:
 			return NULL;
 		}
 
@@ -88,7 +89,6 @@ void Connection::handleOut()
 uint32_t Connection::getEventsNextLoop()
 {
 	uint32_t events = 0;
-	LOGSOCK(Logger::LOG, "_responses[i] next Loop cur/back: ", _fd);
 	if (_response)
 		events |= EPOLLOUT;
 	if (_handleInState != DONE_READING)
