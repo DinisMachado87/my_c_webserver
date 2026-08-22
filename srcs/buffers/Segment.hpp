@@ -50,7 +50,7 @@ public:
 	void reset();
 	void poison();
 
-	ssize_t readFrom(const Reader &reader);
+	ssize_t readFrom(const Reader &reader, size_t cap = 0);
 	// Returns bytes copied. Truncates to writable().
 	size_t copyIn(const char *src, size_t len);
 

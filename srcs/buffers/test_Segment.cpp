@@ -138,6 +138,37 @@ TEST_F(SegmentPipeTest, ReadFromFullSegNoSyscall)
 	expectBytes(seg->writtenView(), big.data(), RECV_SIZE);
 }
 
+TEST_F(SegmentPipeTest, ReadFromCapStopsShortAndLeavesRest)
+{
+	writePipe("0123456789", 10);
+	Reader reader(FD_FILE, fds[0]);
+
+	ssize_t bytesRead = seg->readFrom(reader, 4);
+	ASSERT_EQ(bytesRead, 4);
+	expectBytes(seg->writtenView(), "0123", 4);
+
+	char rest[16];
+	readPipe(rest, 6);
+	expectBytes(StrView(rest, 6), "456789", 6);
+}
+
+TEST_F(SegmentPipeTest, ReadFromCapNeverExceedsWritable)
+{
+#define WRITABLE 2
+	std::string big(RECV_SIZE - WRITABLE, 'x');
+	seg->copyIn(big.data(), big.size());
+	ASSERT_EQ(seg->writable(), WRITABLE);
+
+	writePipe("abcdef", 6);
+	Reader reader(FD_FILE, fds[0]);
+
+	// cap 100 > writable 2 — writable must win, or read() writes past _data.
+	ssize_t bytesRead = seg->readFrom(reader, 100);
+	ASSERT_EQ(bytesRead, 2);
+	ASSERT_EQ(seg->writable(), 0u);
+	expectBytes(seg->lastWritten(2), "ab", 2);
+}
+
 TEST_F(SegmentPipeTest, ReadFromClosedFd)
 {
 	close(fds[0]);
@@ -165,7 +196,7 @@ TEST_F(SegmentPipeTest, SendToEmptiesBufferWhenSpace)
 	seg->sendTo(writer);
 	char buf[16];
 	readPipe(buf, 6);
-	EXPECT_EQ(seg->unsentView().size(), 0u);
+	EXPECT_EQ(seg->unusedView().size(), 0u);
 }
 
 TEST_F(SegmentPipeTest, SendToEmptyNoSyscall)

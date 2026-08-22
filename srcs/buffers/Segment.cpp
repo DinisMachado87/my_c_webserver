@@ -2,6 +2,7 @@
 #include "Reader.hpp"
 #include "Writer.hpp"
 #include <cassert>
+#include <cstddef>
 #include <cstring>
 
 /* Constructors */
@@ -60,14 +61,18 @@ void Segment::reset()
 	_used = 0;
 }
 
-ssize_t Segment::readFrom(const Reader &reader)
+ssize_t Segment::readFrom(const Reader &reader, size_t cap)
 {
-	if (writable() == 0)
+	size_t availableLen = writable();
+	if (cap && cap < availableLen)
+		availableLen = cap;
+	if (!availableLen)
 		return 0;
-	ssize_t n = reader.readIn(_data + _written, writable());
-	if (n > 0)
-		_written += static_cast<size_t>(n);
-	return n;
+
+	ssize_t bytesRead = reader.readIn(_data + _written, availableLen);
+	if (bytesRead > 0)
+		_written += static_cast<size_t>(bytesRead);
+	return bytesRead;
 }
 
 size_t Segment::copyIn(const char *src, size_t len)
